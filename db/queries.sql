@@ -64,3 +64,8 @@ REFRESH MATERIALIZED VIEW CONCURRENTLY mv_daily_recon_summary;
 SELECT id, symbol, metadata
 FROM instruments
 WHERE metadata @> '{"sector":"Banking"}'::jsonb;
+-- ============================================================================
+-- TICKET-ADV008 — Refresh dashboard aggregates without blocking readers.
+-- The unique index on (trade_date, region, asset_class) makes this possible.
+-- ============================================================================
+REFRESH MATERIALIZED VIEW CONCURRENTLY mv_daily_recon_summary;

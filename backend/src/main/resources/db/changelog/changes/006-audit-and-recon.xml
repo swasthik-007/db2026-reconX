@@ -111,12 +111,14 @@
         </createTable>
 
 
-        <addForeignKeyConstraint
-                baseTableName="recon_breaks"
-                baseColumnNames="trade_id"
-                constraintName="fk_recon_breaks_trade"
-                referencedTableName="trades"
-                referencedColumnNames="id"/>
+        <!-- `trades` is range partitioned by trade_date and has the composite
+             key (id, trade_date).  A single trade_id cannot be a PostgreSQL
+             foreign key to that parent without storing trade_date here too.
+             Keep the logical relationship and index it; application services
+             validate the referenced trade until the child model is upgraded. -->
+        <createIndex tableName="recon_breaks" indexName="idx_recon_breaks_trade_id">
+            <column name="trade_id"/>
+        </createIndex>
 
 
         <rollback>
