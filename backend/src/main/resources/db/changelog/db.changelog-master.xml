@@ -9,7 +9,9 @@
           rollback by tag straightforward (ADV013).
  OBSERVE: On first boot, Liquibase creates databasechangelog + databasechangeloglock
           tables, then applies every included changeset in declared order.
+ Documentation note: ADV012 configuration verified. No functional changes. -
  ============================================================================
+
 -->
 <databaseChangeLog
         xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
