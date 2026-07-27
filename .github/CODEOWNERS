@@ -1,0 +1,10 @@
+# Default reviewer for all repository content.
+* @swasthik-007
+
+# Day-to-day ownership by application area. Update these entries when the
+# team assigns backend, frontend, and database leads.
+/backend/ @swasthik-007
+/frontend/ @Tatwa2005
+/db/ @Sanjanasindaram1
+/monitoring/ @NavneetShriwastav
+/.github/ @sai468636
