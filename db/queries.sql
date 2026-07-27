@@ -13,10 +13,13 @@ WHERE t.deleted_at IS NULL
 ORDER BY t.trade_date DESC, t.instrument_id;
 
 
+
 -- ============================================================================
 -- TICKET-ADV011 — Recursive CTE: trade lifecycle (execution -> settlement
 --                -> recon_break -> resolution)
+-- Documentation note: ADV011 implementation verified. No functional changes.
 -- ============================================================================
+
 WITH RECURSIVE trade_lifecycle AS (
     -- anchor: every trade in its execution state
     SELECT
