@@ -4,10 +4,8 @@
 erDiagram
     COUNTERPARTIES ||--o{ TRADES : executes
     INSTRUMENTS ||--o{ TRADES : covers
-    USERS ||--o{ RECON_JOBS : starts
     TRADES ||--o{ SETTLEMENTS : has
     TRADES ||--o{ RECON_BREAKS : may_create
-    RECON_JOBS ||--o{ RECON_BREAKS : detects
 
     COUNTERPARTIES {
         bigint id PK
@@ -61,7 +59,6 @@ erDiagram
     RECON_JOBS {
         bigint id PK
         varchar job_id UK
-        bigint triggered_by_user_id FK
         date from_date
         date to_date
         varchar status
@@ -73,8 +70,7 @@ erDiagram
 
     RECON_BREAKS {
         bigint id PK
-        bigint trade_id FK
-        bigint recon_job_id FK
+        bigint trade_id "logical trade reference"
         varchar discrepancy_type
         varchar status
         timestamp detected_at
@@ -94,5 +90,8 @@ erDiagram
     }
 ```
 
-`AUDIT_LOG.actor` deliberately has no database foreign key: audit data must
-remain available even if the referenced user or business record is removed.
+`SETTLEMENTS.trade_id` and `RECON_BREAKS.trade_id` are logical relationships.
+PostgreSQL cannot enforce a single-column foreign key to the partitioned
+`trades` parent because its primary key is `(id, trade_date)`. `AUDIT_LOG.actor`
+also deliberately has no database foreign key so audit data survives record
+deletion.
