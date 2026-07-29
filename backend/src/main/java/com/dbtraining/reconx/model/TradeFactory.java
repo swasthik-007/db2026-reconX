@@ -27,51 +27,151 @@ public final class TradeFactory {
     private TradeFactory() { }
 
     /**
-     * TODO(TICKET-ADV023):
-     *   1. Parse assetClass string into TradeType.AssetClass enum (toUpperCase first).
-     *   2. switch on the enum and dispatch to the matching equity/fx/bond/derivative
-     *      helper below.
-     *   3. The switch must be exhaustive — every TradeType.AssetClass case handled.
+     * Parse assetClass string into enum and dispatch to the appropriate builder.
      */
     public static TradeType create(String assetClass, Map<String, Object> p) {
-        throw new UnsupportedOperationException("TICKET-ADV023");
+        if (assetClass == null) throw new IllegalArgumentException("assetClass is required");
+        TradeType.AssetClass ac;
+        try {
+            ac = TradeType.AssetClass.valueOf(assetClass.trim().toUpperCase());
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Unknown assetClass: " + assetClass, e);
+        }
+
+        return switch (ac) {
+            case EQUITY -> equity(p);
+            case FX -> fx(p);
+            case BOND -> bond(p);
+            case DERIVATIVE -> derivative(p);
+        };
     }
 
-    /**
-     * TODO(TICKET-ADV023):
-     *   Build an EquityTrade from the map. Expected keys: tradeRef, symbol,
-     *   quantity, price, currency, side, tradeDate, counterpartyId.
-     */
     private static EquityTrade equity(Map<String, Object> p) {
-        throw new UnsupportedOperationException("TICKET-ADV023");
+        TradeRef tr = TradeRef.of(str(p, "tradeRef"));
+        String symbol = firstNonNullStr(p, "symbol", "instrumentSymbol");
+        BigDecimal quantity = toBigDecimal(p.get("quantity"));
+        BigDecimal price = toBigDecimal(p.get("price"));
+        String currency = str(p, "currency");
+        Side side = Side.valueOf(str(p, "side").toUpperCase());
+        LocalDate tradeDate = toLocalDate(p.get("tradeDate"));
+        long counterpartyId = toLong(p.get("counterpartyId"));
+
+        return EquityTrade.builder()
+                .tradeRef(tr)
+                .instrumentSymbol(symbol)
+                .quantity(quantity)
+                .price(price)
+                .currency(currency)
+                .side(side)
+                .tradeDate(tradeDate)
+                .counterpartyId(counterpartyId)
+                .build();
     }
 
-    /**
-     * TODO(TICKET-ADV023):
-     *   Build an FXTrade from the map. Expected keys: tradeRef, ccy1, ccy2,
-     *   notionalCcy1, fxRate, side, tradeDate, counterpartyId.
-     */
     private static FXTrade fx(Map<String, Object> p) {
-        throw new UnsupportedOperationException("TICKET-ADV023");
+        TradeRef tr = TradeRef.of(str(p, "tradeRef"));
+        String ccy1 = str(p, "ccy1");
+        String ccy2 = str(p, "ccy2");
+        BigDecimal notionalCcy1 = toBigDecimal(p.get("notionalCcy1"));
+        BigDecimal fxRate = toBigDecimal(p.get("fxRate"));
+        Side side = Side.valueOf(str(p, "side").toUpperCase());
+        LocalDate tradeDate = toLocalDate(p.get("tradeDate"));
+        long counterpartyId = toLong(p.get("counterpartyId"));
+
+        return FXTrade.builder()
+                .tradeRef(tr)
+                .ccy1(ccy1)
+                .ccy2(ccy2)
+                .notionalCcy1(notionalCcy1)
+                .fxRate(fxRate)
+                .side(side)
+                .tradeDate(tradeDate)
+                .counterpartyId(counterpartyId)
+                .build();
     }
 
-    /**
-     * TODO(TICKET-ADV023):
-     *   Build a BondTrade from the map. Expected keys: tradeRef, isin,
-     *   faceValue, couponRate, maturityDate, currency, side, tradeDate,
-     *   counterpartyId.
-     */
     private static BondTrade bond(Map<String, Object> p) {
-        throw new UnsupportedOperationException("TICKET-ADV023");
+        TradeRef tr = TradeRef.of(str(p, "tradeRef"));
+        String isin = str(p, "isin");
+        BigDecimal faceValue = toBigDecimal(p.get("faceValue"));
+        BigDecimal couponRate = toBigDecimal(p.get("couponRate"));
+        LocalDate maturityDate = toLocalDate(p.get("maturityDate"));
+        String currency = str(p, "currency");
+        Side side = Side.valueOf(str(p, "side").toUpperCase());
+        LocalDate tradeDate = toLocalDate(p.get("tradeDate"));
+        long counterpartyId = toLong(p.get("counterpartyId"));
+
+        return BondTrade.builder()
+                .tradeRef(tr)
+                .isin(isin)
+                .faceValue(faceValue)
+                .couponRate(couponRate)
+                .maturityDate(maturityDate)
+                .currency(currency)
+                .side(side)
+                .tradeDate(tradeDate)
+                .counterpartyId(counterpartyId)
+                .build();
     }
 
-    /**
-     * TODO(TICKET-ADV023):
-     *   Build a DerivativeTrade from the map. Expected keys: tradeRef,
-     *   underlying, strike, quantity, expiry, optionType, currency, side,
-     *   tradeDate, counterpartyId.
-     */
     private static DerivativeTrade derivative(Map<String, Object> p) {
-        throw new UnsupportedOperationException("TICKET-ADV023");
+        TradeRef tr = TradeRef.of(str(p, "tradeRef"));
+        String underlying = str(p, "underlying");
+        BigDecimal strike = toBigDecimal(p.get("strike"));
+        BigDecimal quantity = toBigDecimal(p.get("quantity"));
+        LocalDate expiry = toLocalDate(p.get("expiry"));
+        String opt = str(p, "optionType");
+        DerivativeTrade.OptionType optionType = DerivativeTrade.OptionType.valueOf(opt.toUpperCase());
+        String currency = str(p, "currency");
+        Side side = Side.valueOf(str(p, "side").toUpperCase());
+        LocalDate tradeDate = toLocalDate(p.get("tradeDate"));
+        long counterpartyId = toLong(p.get("counterpartyId"));
+
+        return DerivativeTrade.builder()
+                .tradeRef(tr)
+                .underlying(underlying)
+                .strike(strike)
+                .quantity(quantity)
+                .expiry(expiry)
+                .optionType(optionType)
+                .currency(currency)
+                .side(side)
+                .tradeDate(tradeDate)
+                .counterpartyId(counterpartyId)
+                .build();
+    }
+
+    /* --- parsing helpers --- */
+    private static String str(Map<String, Object> p, String key) {
+        Object v = p.get(key);
+        if (v == null) throw new IllegalArgumentException(key + " is required");
+        return v.toString();
+    }
+
+    private static String firstNonNullStr(Map<String, Object> p, String k1, String k2) {
+        Object v = p.get(k1);
+        if (v != null) return v.toString();
+        v = p.get(k2);
+        if (v != null) return v.toString();
+        throw new IllegalArgumentException(k1 + " or " + k2 + " is required");
+    }
+
+    private static BigDecimal toBigDecimal(Object o) {
+        if (o == null) throw new IllegalArgumentException("numeric value is required");
+        if (o instanceof BigDecimal) return (BigDecimal) o;
+        if (o instanceof Number) return new BigDecimal(((Number) o).toString());
+        return new BigDecimal(o.toString());
+    }
+
+    private static LocalDate toLocalDate(Object o) {
+        if (o == null) throw new IllegalArgumentException("date is required");
+        if (o instanceof LocalDate) return (LocalDate) o;
+        return LocalDate.parse(o.toString());
+    }
+
+    private static long toLong(Object o) {
+        if (o == null) throw new IllegalArgumentException("id is required");
+        if (o instanceof Number) return ((Number) o).longValue();
+        return Long.parseLong(o.toString());
     }
 }
