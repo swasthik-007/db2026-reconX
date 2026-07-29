@@ -5,19 +5,11 @@ import java.time.LocalDate;
 import java.util.Currency;
 import java.util.Objects;
 
-/**
- * ============================================================================
- * TICKET-ADV022 — DerivativeTrade with Builder pattern
- *
- * WHAT:    Option/derivative trade — underlying, strike, expiry, optionType.
- * HOW:     Same builder pattern. notional() = strike * quantity in the
- *          trade's currency (simplified — real derivatives use delta-adjusted).
- * ============================================================================
- */
-public final class DerivativeTrade extends Trade implements TradeType {
+public final class DerivativeTrade implements TradeType {
 
     public enum OptionType { CALL, PUT }
 
+    private final TradeRef tradeRef;
     private final String underlying;
     private final BigDecimal strike;
     private final BigDecimal quantity;
@@ -25,10 +17,11 @@ public final class DerivativeTrade extends Trade implements TradeType {
     private final OptionType optionType;
     private final Currency currency;
     private final Side side;
+    private final LocalDate tradeDate;
     private final long counterpartyId;
 
     private DerivativeTrade(Builder b) {
-        super(b.tradeRef, b.tradeDate);
+        this.tradeRef       = b.tradeRef;
         this.underlying     = b.underlying;
         this.strike         = b.strike;
         this.quantity       = b.quantity;
@@ -36,18 +29,16 @@ public final class DerivativeTrade extends Trade implements TradeType {
         this.optionType     = b.optionType;
         this.currency       = b.currency;
         this.side           = b.side;
+        this.tradeDate      = b.tradeDate;
         this.counterpartyId = b.counterpartyId;
     }
 
     public static Builder builder() { return new Builder(); }
 
-    @Override public TradeType.AssetClass assetClass() { return TradeType.AssetClass.DERIVATIVE; }
-
-    /** Simplified notional = strike * quantity in the trade currency. */
-    @Override public Money notional() {
-        // TODO(TICKET-ADV022): return new Money(strike * quantity, currency).
-        throw new UnsupportedOperationException("TICKET-ADV022");
-    }
+    @Override public TradeRef tradeRef()     { return tradeRef; }
+    @Override public LocalDate tradeDate()   { return tradeDate; }
+    @Override public AssetClass assetClass() { return AssetClass.DERIVATIVE; }
+    @Override public Money notional()        { return new Money(strike.multiply(quantity), currency); }
 
     public String underlying()       { return underlying; }
     public BigDecimal strike()       { return strike; }
@@ -57,20 +48,6 @@ public final class DerivativeTrade extends Trade implements TradeType {
     public Currency currency()       { return currency; }
     public Side side()               { return side; }
     public long counterpartyId()     { return counterpartyId; }
-
-    @Override public boolean equals(Object o) {
-        // TODO(TICKET-ADV028): pattern-match on DerivativeTrade and compare tradeRef.
-        throw new UnsupportedOperationException("TICKET-ADV028");
-    }
-    @Override public int hashCode() {
-        // TODO(TICKET-ADV028): hash from tradeRef.
-        throw new UnsupportedOperationException("TICKET-ADV028");
-    }
-
-    @Override public String toString() {
-        // TODO(TICKET-ADV030): "DerivativeTrade[ref=..., TYPE UNDERLYING on date, strike=... CCY, qty=..., expiry=..., side=...]"
-        throw new UnsupportedOperationException("TICKET-ADV030");
-    }
 
     public static final class Builder {
         private TradeRef tradeRef;
@@ -94,12 +71,20 @@ public final class DerivativeTrade extends Trade implements TradeType {
         public Builder counterpartyId(long v)      { this.counterpartyId = v; return this; }
 
         public DerivativeTrade build() {
-            // TODO(TICKET-ADV022):
-            //   - Objects.requireNonNull each required field.
-            //   - strike and quantity must be > 0.
-            //   - expiry must not be before tradeDate.
-            //   - return new DerivativeTrade(this).
-            throw new UnsupportedOperationException("TICKET-ADV022");
+            Objects.requireNonNull(tradeRef,   "tradeRef");
+            Objects.requireNonNull(underlying, "underlying");
+            Objects.requireNonNull(strike,     "strike");
+            Objects.requireNonNull(quantity,   "quantity");
+            Objects.requireNonNull(expiry,     "expiry");
+            Objects.requireNonNull(optionType, "optionType");
+            Objects.requireNonNull(currency,   "currency");
+            Objects.requireNonNull(side,       "side");
+            Objects.requireNonNull(tradeDate,  "tradeDate");
+            if (strike.signum() <= 0)   throw new IllegalStateException("strike must be > 0");
+            if (quantity.signum() <= 0) throw new IllegalStateException("quantity must be > 0");
+            if (expiry.isBefore(tradeDate))
+                throw new IllegalStateException("expiry cannot be before tradeDate");
+            return new DerivativeTrade(this);
         }
     }
 }
