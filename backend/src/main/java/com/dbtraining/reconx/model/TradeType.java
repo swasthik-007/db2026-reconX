@@ -2,6 +2,7 @@ package com.dbtraining.reconx.model;
 
 import java.time.LocalDate;
 import java.util.Comparator;
+import java.util.Objects;
 
 /**
  * ============================================================================
@@ -32,26 +33,66 @@ public sealed interface TradeType
         extends Comparable<TradeType>
         permits EquityTrade, FXTrade, BondTrade, DerivativeTrade {
 
-    /** Stable natural key. Drives equals/hashCode. */
+    /**
+     * Stable natural key. Drives equals/hashCode.
+     *
+     * @return immutable trade reference
+     */
     TradeRef tradeRef();
 
-    /** Notional value of the trade for reconciliation summaries. */
+    /**
+     * Notional value of the trade for reconciliation summaries.
+     *
+     * @return trade notional
+     */
     Money notional();
 
-    /** Business date the trade was struck on. */
+    /**
+     * Business date the trade was struck on.
+     *
+     * @return trade date
+     */
     LocalDate tradeDate();
 
-    /** Discriminator for switch expressions and persistence mapping. */
+    /**
+     * Discriminator for switch expressions and persistence mapping.
+     *
+     * @return asset class
+     */
     AssetClass assetClass();
 
-    Comparator<TradeType> NATURAL = Comparator
-            .comparing(TradeType::tradeDate).reversed()
-            .thenComparing(t -> t.tradeRef().value());
+    /**
+     * Natural ordering:
+     * <ul>
+     *     <li>Newest trade date first</li>
+     *     <li>If equal, ascending TradeRef</li>
+     * </ul>
+     */
+    static final Comparator<TradeType> NATURAL =
+            Comparator.comparing(TradeType::tradeDate)
+                      .reversed()
+                      .thenComparing(t -> t.tradeRef().value());
 
+    /**
+     * Compares this trade with another using the platform's natural ordering.
+     *
+     * @param other the trade to compare against
+     * @return comparison result
+     * @throws NullPointerException if {@code other} is {@code null}
+     */
     @Override
     default int compareTo(TradeType other) {
+        Objects.requireNonNull(other, "other");
         return NATURAL.compare(this, other);
     }
 
-    enum AssetClass { EQUITY, FX, BOND, DERIVATIVE }
+    /**
+     * Supported asset classes.
+     */
+    enum AssetClass {
+        EQUITY,
+        FX,
+        BOND,
+        DERIVATIVE
+    }
 }
