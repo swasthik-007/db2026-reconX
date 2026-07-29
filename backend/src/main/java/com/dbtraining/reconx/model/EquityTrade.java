@@ -35,40 +35,67 @@ public final class EquityTrade extends Trade implements TradeType {
     private EquityTrade(Builder b) {
         super(b.tradeRef, b.tradeDate);
         this.instrumentSymbol = b.instrumentSymbol;
-        this.quantity         = b.quantity;
-        this.price            = b.price;
-        this.currency         = b.currency;
-        this.side             = b.side;
-        this.counterpartyId   = b.counterpartyId;
+        this.quantity = b.quantity;
+        this.price = b.price;
+        this.currency = b.currency;
+        this.side = b.side;
+        this.counterpartyId = b.counterpartyId;
     }
 
-    public static Builder builder() { return new Builder(); }
+    public static Builder builder() {
+        return new Builder();
+    }
 
-    @Override public TradeType.AssetClass assetClass(){ return TradeType.AssetClass.EQUITY; }
+    @Override
+    public TradeType.AssetClass assetClass() {
+        return TradeType.AssetClass.EQUITY;
+    }
 
     /** Notional = quantity * price in the trade currency. */
-    @Override public Money notional() {
-        // TODO(TICKET-ADV019): return new Money(quantity * price, currency).
+    @Override
+    public Money notional() {
         return new Money(quantity.multiply(price), currency);
     }
 
-    public String instrumentSymbol() { return instrumentSymbol; }
-    public BigDecimal quantity()     { return quantity; }
-    public BigDecimal price()        { return price; }
-    public Currency currency()       { return currency; }
-    public Side side()               { return side; }
-    public long counterpartyId()     { return counterpartyId; }
+    public String instrumentSymbol() {
+        return instrumentSymbol;
+    }
+
+    public BigDecimal quantity() {
+        return quantity;
+    }
+
+    public BigDecimal price() {
+        return price;
+    }
+
+    public Currency currency() {
+        return currency;
+    }
+
+    public Side side() {
+        return side;
+    }
+
+    public long counterpartyId() {
+        return counterpartyId;
+    }
 
     /** equals: two EquityTrades are equal iff their tradeRef is equal. */
     @Override
     public boolean equals(Object o) {
-        // TODO(TICKET-ADV028): pattern-match on EquityTrade and compare tradeRef.
-        throw new UnsupportedOperationException("TICKET-ADV028");
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof EquityTrade other)) {
+            return false;
+        }
+        return tradeRef().equals(other.tradeRef());
     }
 
-    @Override public int hashCode() {
-        // TODO(TICKET-ADV028): hash from tradeRef so it pairs with equals().
-        throw new UnsupportedOperationException("TICKET-ADV028");
+    @Override
+    public int hashCode() {
+        return tradeRef().hashCode();
     }
 
     @Override
@@ -80,6 +107,7 @@ public final class EquityTrade extends Trade implements TradeType {
 
     /** Fluent builder. Required fields validated in {@link #build()}. */
     public static final class Builder {
+
         private TradeRef tradeRef;
         private String instrumentSymbol;
         private BigDecimal quantity;
@@ -89,35 +117,69 @@ public final class EquityTrade extends Trade implements TradeType {
         private LocalDate tradeDate;
         private long counterpartyId;
 
-        public Builder tradeRef(TradeRef v)           { this.tradeRef = v;        return this; }
-        public Builder instrumentSymbol(String v)     { this.instrumentSymbol = v; return this; }
-        public Builder quantity(BigDecimal v)         { this.quantity = v;        return this; }
-        public Builder price(BigDecimal v)            { this.price = v;           return this; }
-        public Builder currency(Currency v)           { this.currency = v;        return this; }
-        public Builder currency(String code)          { return currency(Currency.getInstance(code)); }
-        public Builder side(Side v)                   { this.side = v;            return this; }
-        public Builder tradeDate(LocalDate v)         { this.tradeDate = v;       return this; }
-        public Builder counterpartyId(long v)         { this.counterpartyId = v;  return this; }
+        public Builder tradeRef(TradeRef v) {
+            this.tradeRef = v;
+            return this;
+        }
+
+        public Builder instrumentSymbol(String v) {
+            this.instrumentSymbol = v;
+            return this;
+        }
+
+        public Builder quantity(BigDecimal v) {
+            this.quantity = v;
+            return this;
+        }
+
+        public Builder price(BigDecimal v) {
+            this.price = v;
+            return this;
+        }
+
+        public Builder currency(Currency v) {
+            this.currency = v;
+            return this;
+        }
+
+        public Builder currency(String code) {
+            return currency(Currency.getInstance(code));
+        }
+
+        public Builder side(Side v) {
+            this.side = v;
+            return this;
+        }
+
+        public Builder tradeDate(LocalDate v) {
+            this.tradeDate = v;
+            return this;
+        }
+
+        public Builder counterpartyId(long v) {
+            this.counterpartyId = v;
+            return this;
+        }
 
         public EquityTrade build() {
 
-    Objects.requireNonNull(tradeRef, "tradeRef");
-    Objects.requireNonNull(instrumentSymbol, "instrumentSymbol");
-    Objects.requireNonNull(quantity, "quantity");
-    Objects.requireNonNull(price, "price");
-    Objects.requireNonNull(currency, "currency");
-    Objects.requireNonNull(side, "side");
-    Objects.requireNonNull(tradeDate, "tradeDate");
+            Objects.requireNonNull(tradeRef, "tradeRef");
+            Objects.requireNonNull(instrumentSymbol, "instrumentSymbol");
+            Objects.requireNonNull(quantity, "quantity");
+            Objects.requireNonNull(price, "price");
+            Objects.requireNonNull(currency, "currency");
+            Objects.requireNonNull(side, "side");
+            Objects.requireNonNull(tradeDate, "tradeDate");
 
-    if (quantity.signum() <= 0) {
-        throw new IllegalStateException("quantity must be > 0");
-    }
+            if (quantity.signum() <= 0) {
+                throw new IllegalStateException("quantity must be > 0");
+            }
 
-    if (price.signum() <= 0) {
-        throw new IllegalStateException("price must be > 0");
-    }
+            if (price.signum() <= 0) {
+                throw new IllegalStateException("price must be > 0");
+            }
 
-    return new EquityTrade(this);
-}
+            return new EquityTrade(this);
+        }
     }
 }
