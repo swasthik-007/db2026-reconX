@@ -23,33 +23,28 @@ import java.util.Objects;
  * TICKET-ADV028 — equals/hashCode from tradeRef (Object methods on a regular class)
  * TICKET-ADV030 — toString() omits PII, prints reference/symbol/qty/price/side
  */
-public final class EquityTrade implements TradeType {
+public final class EquityTrade extends Trade implements TradeType {
 
-    private final TradeRef tradeRef;
     private final String instrumentSymbol;
     private final BigDecimal quantity;
     private final BigDecimal price;
     private final Currency currency;
     private final Side side;
-    private final LocalDate tradeDate;
     private final long counterpartyId;
 
     private EquityTrade(Builder b) {
-        this.tradeRef         = b.tradeRef;
+        super(b.tradeRef, b.tradeDate);
         this.instrumentSymbol = b.instrumentSymbol;
         this.quantity         = b.quantity;
         this.price            = b.price;
         this.currency         = b.currency;
         this.side             = b.side;
-        this.tradeDate        = b.tradeDate;
         this.counterpartyId   = b.counterpartyId;
     }
 
     public static Builder builder() { return new Builder(); }
 
-    @Override public TradeRef tradeRef()    { return tradeRef; }
-    @Override public LocalDate tradeDate()  { return tradeDate; }
-    @Override public AssetClass assetClass(){ return AssetClass.EQUITY; }
+    @Override public TradeType.AssetClass assetClass(){ return TradeType.AssetClass.EQUITY; }
 
     /** Notional = quantity * price in the trade currency. */
     @Override public Money notional() {
