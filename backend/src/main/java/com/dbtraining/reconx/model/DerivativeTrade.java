@@ -49,6 +49,24 @@ public final class DerivativeTrade implements TradeType {
     public Side side()               { return side; }
     public long counterpartyId()     { return counterpartyId; }
 
+    // NOTE:
+// Deliberately excludes counterpartyId and any other sensitive/internal
+// identifiers to prevent PII leakage into application logs.
+@Override
+public String toString() {
+    return "DerivativeTrade[ref=%s, underlying=%s, strike=%s %s, quantity=%s, expiry=%s, optionType=%s, side=%s]"
+            .formatted(
+                    tradeRef.value(),
+                    underlying,
+                    strike.toPlainString(),
+                    currency.getCurrencyCode(),
+                    quantity.toPlainString(),
+                    expiry,
+                    optionType,
+                    side
+            );
+}
+
     public static final class Builder {
         private TradeRef tradeRef;
         private String underlying;
