@@ -44,6 +44,23 @@ public final class BondTrade implements TradeType {
     public Side side()                { return side; }
     public long counterpartyId()      { return counterpartyId; }
 
+    // NOTE:
+// Deliberately excludes counterpartyId and any other sensitive/internal
+// identifiers to prevent PII leakage into application logs.
+@Override
+public String toString() {
+    return "BondTrade[ref=%s, isin=%s, faceValue=%s %s, coupon=%s, maturity=%s, side=%s]"
+            .formatted(
+                    tradeRef.value(),
+                    isin,
+                    faceValue.toPlainString(),
+                    currency.getCurrencyCode(),
+                    couponRate.toPlainString(),
+                    maturityDate,
+                    side
+            );
+}
+
     public static final class Builder {
         private TradeRef tradeRef;
         private String isin;
