@@ -25,55 +25,111 @@
         </preConditions>
         <comment>Convert the initial trades table to monthly date partitions.</comment>
         <sql splitStatements="false"><![CDATA[
-            ALTER TABLE settlements DROP CONSTRAINT fk_settlements_trade;
-            ALTER TABLE trades RENAME TO trades_legacy;
 
-            CREATE TABLE trades (
-                id              BIGINT NOT NULL DEFAULT nextval('trades_id_seq'),
-                trade_ref       VARCHAR(30) NOT NULL,
-                instrument_id   BIGINT NOT NULL REFERENCES instruments(id),
-                counterparty_id BIGINT NOT NULL REFERENCES counterparties(id),
-                asset_class     VARCHAR(20) NOT NULL,
-                side            VARCHAR(4) NOT NULL,
-                quantity        NUMERIC(18,4) NOT NULL,
-                price           NUMERIC(18,4) NOT NULL,
-                trade_date      DATE NOT NULL,
-                status          VARCHAR(20) NOT NULL DEFAULT 'PENDING',
-                deleted_at      TIMESTAMP,
-                created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                modified_at     TIMESTAMP,
-                CONSTRAINT pk_trades PRIMARY KEY (id, trade_date),
-                CONSTRAINT uq_trades_trade_ref_date UNIQUE (trade_ref, trade_date)
-            ) PARTITION BY RANGE (trade_date);
+ALTER TABLE settlements DROP CONSTRAINT fk_settlements_trade;
 
-            ALTER SEQUENCE trades_id_seq OWNED BY trades.id;
+-- Remove old identity dependency
+ALTER TABLE trades ALTER COLUMN id DROP IDENTITY;
 
-            CREATE TABLE trades_2026_04 PARTITION OF trades
-                FOR VALUES FROM ('2026-04-01') TO ('2026-05-01');
-            CREATE TABLE trades_2026_05 PARTITION OF trades
-                FOR VALUES FROM ('2026-05-01') TO ('2026-06-01');
-            CREATE TABLE trades_2026_06 PARTITION OF trades
-                FOR VALUES FROM ('2026-06-01') TO ('2026-07-01');
-            CREATE TABLE trades_2026_07 PARTITION OF trades
-                FOR VALUES FROM ('2026-07-01') TO ('2026-08-01');
-            CREATE TABLE trades_default PARTITION OF trades DEFAULT;
+-- Rename old table
+ALTER TABLE trades RENAME TO trades_legacy;
 
-            CREATE INDEX idx_partitioned_trades_status ON trades (status);
-            CREATE INDEX idx_partitioned_trades_instrument ON trades (instrument_id);
-            CREATE INDEX idx_partitioned_trades_counterparty ON trades (counterparty_id);
 
-            INSERT INTO trades (
-                id, trade_ref, instrument_id, counterparty_id, asset_class, side,
-                quantity, price, trade_date, status, deleted_at, created_at, modified_at
-            )
-            SELECT
-                id, trade_ref, instrument_id, counterparty_id, asset_class, side,
-                quantity, price, trade_date, status, deleted_at, created_at, modified_at
-            FROM trades_legacy;
+-- Create new sequence for partitioned table
+CREATE SEQUENCE trades_id_seq;
 
-            DROP TABLE trades_legacy;
-        ]]></sql>
-        <rollback>
+
+CREATE TABLE trades (
+    id BIGINT NOT NULL DEFAULT nextval('trades_id_seq'),
+    trade_ref VARCHAR(30) NOT NULL,
+    instrument_id BIGINT NOT NULL REFERENCES instruments(id),
+    counterparty_id BIGINT NOT NULL REFERENCES counterparties(id),
+    asset_class VARCHAR(20) NOT NULL,
+    side VARCHAR(4) NOT NULL,
+    quantity NUMERIC(18,4) NOT NULL,
+    price NUMERIC(18,4) NOT NULL,
+    trade_date DATE NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    deleted_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    modified_at TIMESTAMP,
+
+    CONSTRAINT pk_trades PRIMARY KEY (id, trade_date),
+    CONSTRAINT uq_trades_trade_ref_date UNIQUE (trade_ref, trade_date)
+
+) PARTITION BY RANGE (trade_date);
+
+
+ALTER SEQUENCE trades_id_seq OWNED BY trades.id;
+
+
+CREATE TABLE trades_2026_04 PARTITION OF trades
+FOR VALUES FROM ('2026-04-01') TO ('2026-05-01');
+
+CREATE TABLE trades_2026_05 PARTITION OF trades
+FOR VALUES FROM ('2026-05-01') TO ('2026-06-01');
+
+CREATE TABLE trades_2026_06 PARTITION OF trades
+FOR VALUES FROM ('2026-06-01') TO ('2026-07-01');
+
+CREATE TABLE trades_2026_07 PARTITION OF trades
+FOR VALUES FROM ('2026-07-01') TO ('2026-08-01');
+
+CREATE TABLE trades_default PARTITION OF trades DEFAULT;
+
+
+CREATE INDEX idx_partitioned_trades_status
+ON trades(status);
+
+CREATE INDEX idx_partitioned_trades_instrument
+ON trades(instrument_id);
+
+CREATE INDEX idx_partitioned_trades_counterparty
+ON trades(counterparty_id);
+
+
+INSERT INTO trades (
+    id,
+    trade_ref,
+    instrument_id,
+    counterparty_id,
+    asset_class,
+    side,
+    quantity,
+    price,
+    trade_date,
+    status,
+    deleted_at,
+    created_at,
+    modified_at
+)
+SELECT
+    id,
+    trade_ref,
+    instrument_id,
+    counterparty_id,
+    asset_class,
+    side,
+    quantity,
+    price,
+    trade_date,
+    status,
+    deleted_at,
+    created_at,
+    modified_at
+FROM trades_legacy;
+
+
+SELECT setval(
+    'trades_id_seq',
+    COALESCE((SELECT MAX(id) FROM trades),1)
+);
+
+
+DROP TABLE trades_legacy;
+
+]]></sql>
+<rollback>
             <sql splitStatements="false"><![CDATA[
                 ALTER TABLE trades RENAME TO trades_partitioned_rollback;
                 ALTER TABLE trades_partitioned_rollback DETACH PARTITION trades_2026_04;
