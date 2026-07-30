@@ -12,6 +12,12 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 /**
@@ -50,22 +56,10 @@ public class TradeAnalyticsService {
             return Map.of();
         }
 
-        return equityTrades.stream().collect(Collectors.groupingBy(
-                EquityTrade::instrumentSymbol,
-                Collectors.collectingAndThen(
-                        Collectors.toList(),
-                        list -> {
-                            BigDecimal totalValue = list.stream()
-                                    .map(trade -> trade.price().multiply(trade.quantity()))
-                                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-                            BigDecimal totalQty = list.stream()
-                                    .map(EquityTrade::quantity)
-                                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-                            if (totalQty.signum() == 0) {
-                                return BigDecimal.ZERO;
-                            }
-                            return totalValue.divide(totalQty, 6, RoundingMode.HALF_UP);
-                        })));
+        return equityTrades.stream()
+                .collect(Collectors.groupingBy(
+                        EquityTrade::instrumentSymbol,
+                        Collectors.mapping(Function.identity(), new VwapCollector())));
     }
 
     /** TICKET-ADV036 — P&L per instrument symbol (sign by Side). */
@@ -94,4 +88,55 @@ public class TradeAnalyticsService {
     }
 
     public record NotionalSummary(long count, BigDecimal total) {}
+
+    private static final class VwapAccumulator {
+        private BigDecimal weightedSum = BigDecimal.ZERO;
+        private BigDecimal totalQty = BigDecimal.ZERO;
+
+        private void add(EquityTrade trade) {
+            weightedSum = weightedSum.add(trade.price().multiply(trade.quantity()));
+            totalQty = totalQty.add(trade.quantity());
+        }
+
+        private VwapAccumulator merge(VwapAccumulator other) {
+            VwapAccumulator merged = new VwapAccumulator();
+            merged.weightedSum = this.weightedSum.add(other.weightedSum);
+            merged.totalQty = this.totalQty.add(other.totalQty);
+            return merged;
+        }
+
+        private BigDecimal finish() {
+            if (totalQty.signum() == 0) {
+                return BigDecimal.ZERO;
+            }
+            return weightedSum.divide(totalQty, 6, RoundingMode.HALF_UP);
+        }
+    }
+
+    private static final class VwapCollector implements Collector<EquityTrade, VwapAccumulator, BigDecimal> {
+        @Override
+        public Supplier<VwapAccumulator> supplier() {
+            return VwapAccumulator::new;
+        }
+
+        @Override
+        public BiConsumer<VwapAccumulator, EquityTrade> accumulator() {
+            return (acc, trade) -> acc.add(trade);
+        }
+
+        @Override
+        public BinaryOperator<VwapAccumulator> combiner() {
+            return VwapAccumulator::merge;
+        }
+
+        @Override
+        public Function<VwapAccumulator, BigDecimal> finisher() {
+            return VwapAccumulator::finish;
+        }
+
+        @Override
+        public Set<Characteristics> characteristics() {
+            return Set.of(Characteristics.UNORDERED);
+        }
+    }
 }
