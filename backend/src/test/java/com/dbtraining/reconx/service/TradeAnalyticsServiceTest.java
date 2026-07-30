@@ -51,6 +51,20 @@ class TradeAnalyticsServiceTest {
         assertThat(service.vwapByInstrument(List.of())).isEmpty();
     }
 
+    @Test
+    void pnlByInstrument_sumsSignedPnlPerInstrument() {
+        List<EquityTrade> trades = List.of(
+                equity("EQU-20260603-0007", "100", "10", 1L, "IBM"),
+                equity("EQU-20260603-0008", "90", "5", 1L, "IBM"),
+                equity("EQU-20260603-0009", "80", "4", 1L, "AAPL")
+        );
+
+        var results = service.pnlByInstrument(trades);
+
+        assertThat(results).containsEntry("IBM", new BigDecimal("-1450"));
+        assertThat(results).containsEntry("AAPL", new BigDecimal("-320"));
+    }
+
     private EquityTrade equity(String ref, String price, String qty, long counterpartyId) {
         return equity(ref, price, qty, counterpartyId, "SAP.DE");
     }
