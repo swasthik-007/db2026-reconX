@@ -17,81 +17,215 @@ public final class BondTrade implements TradeType {
     private final LocalDate tradeDate;
     private final long counterpartyId;
 
+
     private BondTrade(Builder b) {
-        this.tradeRef       = b.tradeRef;
-        this.isin           = b.isin;
-        this.faceValue      = b.faceValue;
-        this.couponRate     = b.couponRate;
-        this.maturityDate   = b.maturityDate;
-        this.currency       = b.currency;
-        this.side           = b.side;
-        this.tradeDate      = b.tradeDate;
+        this.tradeRef = b.tradeRef;
+        this.isin = b.isin;
+        this.faceValue = b.faceValue;
+        this.couponRate = b.couponRate;
+        this.maturityDate = b.maturityDate;
+        this.currency = b.currency;
+        this.side = b.side;
+        this.tradeDate = b.tradeDate;
         this.counterpartyId = b.counterpartyId;
     }
 
-    public static Builder builder() { return new Builder(); }
 
-    @Override public TradeRef tradeRef()     { return tradeRef; }
-    @Override public LocalDate tradeDate()   { return tradeDate; }
-    @Override public AssetClass assetClass() { return AssetClass.BOND; }
-    @Override public Money notional()        { return new Money(faceValue, currency); }
+    public static Builder builder() {
+        return new Builder();
+    }
 
-    public String isin()              { return isin; }
-    public BigDecimal faceValue()     { return faceValue; }
-    public BigDecimal couponRate()    { return couponRate; }
-    public LocalDate maturityDate()   { return maturityDate; }
-    public Currency currency()        { return currency; }
-    public Side side()                { return side; }
-    public long counterpartyId()      { return counterpartyId; }
 
-    // NOTE:
-// Deliberately excludes counterpartyId and any other sensitive/internal
-// identifiers to prevent PII leakage into application logs.
-@Override
-public String toString() {
-    return "BondTrade[ref=%s, isin=%s, faceValue=%s %s, coupon=%s, maturity=%s, side=%s]"
-            .formatted(
-                    tradeRef.value(),
-                    isin,
-                    faceValue.toPlainString(),
-                    currency.getCurrencyCode(),
-                    couponRate.toPlainString(),
-                    maturityDate,
-                    side
-            );
-}
+    @Override
+    public TradeRef tradeRef() {
+        return tradeRef;
+    }
+
+    @Override
+    public LocalDate tradeDate() {
+        return tradeDate;
+    }
+
+    @Override
+    public AssetClass assetClass() {
+        return AssetClass.BOND;
+    }
+
+    @Override
+    public Money notional() {
+        return new Money(faceValue, currency);
+    }
+
+
+    public String isin() {
+        return isin;
+    }
+
+    public BigDecimal faceValue() {
+        return faceValue;
+    }
+
+    public BigDecimal couponRate() {
+        return couponRate;
+    }
+
+    public LocalDate maturityDate() {
+        return maturityDate;
+    }
+
+    public Currency currency() {
+        return currency;
+    }
+
+    public Side side() {
+        return side;
+    }
+
+    public long counterpartyId() {
+        return counterpartyId;
+    }
+
+
+    @Override
+    public boolean equals(Object o) {
+
+        if (this == o)
+            return true;
+
+        if (!(o instanceof BondTrade other))
+            return false;
+
+        return tradeRef.equals(other.tradeRef);
+    }
+
+
+    @Override
+    public int hashCode() {
+        return tradeRef.hashCode();
+    }
+
+
+    @Override
+    public String toString() {
+
+        return "BondTrade[ref=%s, isin=%s, faceValue=%s %s, coupon=%s, maturity=%s, side=%s]"
+                .formatted(
+                        tradeRef.value(),
+                        isin,
+                        faceValue.toPlainString(),
+                        currency.getCurrencyCode(),
+                        couponRate.toPlainString(),
+                        maturityDate,
+                        side
+                );
+    }
+
 
     public static final class Builder {
+
         private TradeRef tradeRef;
         private String isin;
-        private BigDecimal faceValue, couponRate;
-        private LocalDate maturityDate, tradeDate;
+        private BigDecimal faceValue;
+        private BigDecimal couponRate;
+        private LocalDate maturityDate;
         private Currency currency;
         private Side side;
+        private LocalDate tradeDate;
         private long counterpartyId;
 
-        public Builder tradeRef(TradeRef v)        { this.tradeRef = v; return this; }
-        public Builder isin(String v)              { this.isin = v; return this; }
-        public Builder faceValue(BigDecimal v)     { this.faceValue = v; return this; }
-        public Builder couponRate(BigDecimal v)    { this.couponRate = v; return this; }
-        public Builder maturityDate(LocalDate v)   { this.maturityDate = v; return this; }
-        public Builder currency(String code)       { this.currency = Currency.getInstance(code); return this; }
-        public Builder side(Side v)                { this.side = v; return this; }
-        public Builder tradeDate(LocalDate v)      { this.tradeDate = v; return this; }
-        public Builder counterpartyId(long v)      { this.counterpartyId = v; return this; }
+
+        public Builder tradeRef(TradeRef v) {
+            this.tradeRef = v;
+            return this;
+        }
+
+
+        public Builder isin(String v) {
+            this.isin = v;
+            return this;
+        }
+
+
+        public Builder faceValue(BigDecimal v) {
+            this.faceValue = v;
+            return this;
+        }
+
+
+        public Builder couponRate(BigDecimal v) {
+            this.couponRate = v;
+            return this;
+        }
+
+
+        public Builder maturityDate(LocalDate v) {
+            this.maturityDate = v;
+            return this;
+        }
+
+
+        public Builder currency(String code) {
+            this.currency = Currency.getInstance(code);
+            return this;
+        }
+
+
+        public Builder side(Side v) {
+            this.side = v;
+            return this;
+        }
+
+
+        public Builder tradeDate(LocalDate v) {
+            this.tradeDate = v;
+            return this;
+        }
+
+
+        public Builder counterpartyId(long v) {
+            this.counterpartyId = v;
+            return this;
+        }
+
 
         public BondTrade build() {
-            Objects.requireNonNull(tradeRef,     "tradeRef");
-            Objects.requireNonNull(isin,         "isin");
-            Objects.requireNonNull(faceValue,    "faceValue");
-            Objects.requireNonNull(couponRate,   "couponRate");
-            Objects.requireNonNull(maturityDate, "maturityDate");
-            Objects.requireNonNull(currency,     "currency");
-            Objects.requireNonNull(side,         "side");
-            Objects.requireNonNull(tradeDate,    "tradeDate");
-            if (maturityDate.isBefore(tradeDate))
-                throw new IllegalStateException("maturityDate cannot be before tradeDate");
-            return new BondTrade(this);
-        }
+
+    Objects.requireNonNull(tradeRef, "tradeRef");
+
+    if (isin == null) {
+        isin = "UNKNOWN";
+    }
+
+    Objects.requireNonNull(faceValue, "faceValue");
+    Objects.requireNonNull(couponRate, "couponRate");
+
+    if (maturityDate == null) {
+        maturityDate = LocalDate.of(2099, 12, 31);
+    }
+
+    Objects.requireNonNull(currency, "currency");
+    Objects.requireNonNull(side, "side");
+    Objects.requireNonNull(tradeDate, "tradeDate");
+
+    if (faceValue.signum() <= 0) {
+        throw new IllegalStateException(
+                "faceValue must be > 0"
+        );
+    }
+
+    if (couponRate.signum() < 0) {
+        throw new IllegalStateException(
+                "couponRate cannot be negative"
+        );
+    }
+
+    if (maturityDate.isBefore(tradeDate)) {
+        throw new IllegalStateException(
+                "maturityDate cannot be before tradeDate"
+        );
+    }
+
+    return new BondTrade(this);
+}
     }
 }

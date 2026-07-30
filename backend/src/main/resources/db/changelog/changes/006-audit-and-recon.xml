@@ -186,5 +186,32 @@
         </rollback>
 
     </changeSet>
+<changeSet id="011-create-recon-results" author="dbtraining">
 
+    <createTable tableName="recon_results">
+
+        <column name="id" type="BIGSERIAL">
+            <constraints primaryKey="true"
+                         nullable="false"/>
+        </column>
+
+        <column name="trade_ref" type="VARCHAR(30)">
+            <constraints nullable="false"/>
+        </column>
+
+        <column name="status" type="VARCHAR(20)">
+            <constraints nullable="false"/>
+        </column>
+
+    </createTable>
+
+
+    <createIndex tableName="recon_results"
+                 indexName="idx_recon_results_trade_ref">
+
+        <column name="trade_ref"/>
+
+    </createIndex>
+
+</changeSet>
 </databaseChangeLog>
