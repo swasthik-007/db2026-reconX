@@ -49,7 +49,8 @@ public record TradeRequest(
         BigDecimal price,
 
         @NotNull(message = "tradeDate is required")
-        LocalDate tradeDate
+@PastOrPresent(message = "tradeDate cannot be in the future")
+LocalDate tradeDate
 
 ) {
 }

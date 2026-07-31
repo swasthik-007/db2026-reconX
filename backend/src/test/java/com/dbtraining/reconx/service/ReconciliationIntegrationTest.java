@@ -1,5 +1,5 @@
 package com.dbtraining.reconx.service;
-
+import com.dbtraining.reconx.repository.entity.TradeStatus;
 import com.dbtraining.reconx.dto.ReconResult;
 import com.dbtraining.reconx.model.EquityTrade;
 import com.dbtraining.reconx.model.ReconciliationRule;
@@ -248,40 +248,41 @@ counterpartyRepository.save(counterparty);
 
 
 
-    private Trade buildTrade(
-            String ref,
-            Instrument instrument,
-            Counterparty counterparty) {
+        private Trade buildTrade(
+        String ref,
+        Instrument instrument,
+        Counterparty counterparty) {
 
+    Trade entity = new Trade();
 
-        Trade entity = new Trade();
+    entity.setTradeRef(ref);
 
+    entity.setInstrument(instrument);
 
-        entity.setTradeRef(ref);
+    entity.setCounterparty(counterparty);
 
-        entity.setInstrument(instrument);
+    entity.setAssetClass("EQUITY");
 
-        entity.setCounterparty(counterparty);
+    entity.setSide("BUY");
 
-        entity.setAssetClass("EQUITY");
+    entity.setQuantity(
+            new BigDecimal("10")
+    );
 
-        entity.setSide("BUY");
+    entity.setPrice(
+            new BigDecimal("100.00")
+    );
 
-        entity.setQuantity(
-                new BigDecimal("10")
-        );
+    entity.setTradeDate(
+            LocalDate.now()
+    );
 
-        entity.setPrice(
-                new BigDecimal("100.00")
-        );
+    entity.setStatus(
+            TradeStatus.PENDING
+    );
 
-        entity.setTradeDate(
-                LocalDate.now()
-        );
-
-        entity.setStatus("PENDING");
-
-
-        return entity;
-    }
+    return entity;
+}
+ 
+ 
 }
