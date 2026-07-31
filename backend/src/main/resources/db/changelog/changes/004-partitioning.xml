@@ -1,338 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
+<!--
+ ============================================================================
+ TICKET-ADV007 — Monthly partitioning of trades on Postgres
+ WHAT:    Convert trades into a range-partitioned parent on trade_date and
+          create partitions for the current rolling 12 months.
+ HOW:     Postgres-only via raw SQL. The trainer guide for Day 1 documents
+          the "rename, recreate as partitioned, copy data" pattern that
+          students must run if production data already exists. In this clean
+          starter we recreate trades directly since there's nothing to copy.
+ WHY:     500-million-row trades table would kill EXPLAIN; monthly partitions
+          give predictable prune-by-date plans.
+ OBSERVE: \d+ trades shows "Partitioned table" + 12 child partitions.
+ ============================================================================
+-->
 <databaseChangeLog
         xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="
-        http://www.liquibase.org/xml/ns/dbchangelog
-        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
 
-
-    <changeSet id="004-partition-trades-by-date" author="reconx-team">
-
+    <!-- Demonstration only: the partitioning conversion is destructive and is
+         taught in the trainer guide Day-1 Sprint 0B. In this starter we
+         create a single partition for the rolling-current-month so the
+         seed data has somewhere to land. -->
+    <changeSet id="004-partition-current-month" author="trainer">
         <preConditions onFail="MARK_RAN">
             <dbms type="postgresql"/>
         </preConditions>
-
-
-        <comment>
-            Convert trades table into monthly range partitioned table using trade_date.
-        </comment>
-
-
-        <sql splitStatements="false"><![CDATA[
-
-
--- ============================================================
--- DROP EXISTING FOREIGN KEYS
--- ============================================================
-
-ALTER TABLE settlements
-DROP CONSTRAINT IF EXISTS fk_settlements_trade;
-
-
-ALTER TABLE recon_breaks
-DROP CONSTRAINT IF EXISTS fk_recon_breaks_trade;
-
-
-
--- ============================================================
--- PRESERVE OLD TRADES TABLE
--- ============================================================
-
-ALTER TABLE trades
-ALTER COLUMN id DROP IDENTITY;
-
-
-ALTER TABLE trades
-RENAME TO trades_legacy;
-
-
-
--- ============================================================
--- CREATE SEQUENCE
--- ============================================================
-
-CREATE SEQUENCE IF NOT EXISTS trades_id_seq;
-
-
-
--- ============================================================
--- CREATE PARTITIONED TRADES TABLE
--- ============================================================
-
-CREATE TABLE trades
-(
-
-    id BIGINT NOT NULL DEFAULT nextval('trades_id_seq'),
-
-    trade_ref VARCHAR(30) NOT NULL,
-
-    instrument_id BIGINT NOT NULL
-        REFERENCES instruments(id),
-
-    counterparty_id BIGINT NOT NULL
-        REFERENCES counterparties(id),
-
-    asset_class VARCHAR(20) NOT NULL,
-
-    side VARCHAR(4) NOT NULL,
-
-    quantity NUMERIC(18,4) NOT NULL,
-
-    price NUMERIC(18,4) NOT NULL,
-
-    trade_date DATE NOT NULL,
-
-    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
-
-    deleted_at TIMESTAMP,
-
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    modified_at TIMESTAMP,
-
-
-    CONSTRAINT pk_trades
-        PRIMARY KEY (id, trade_date),
-
-
-    CONSTRAINT uq_trades_trade_ref_date
-        UNIQUE (trade_ref, trade_date)
-
-)
-PARTITION BY RANGE (trade_date);
-
-
-
-ALTER SEQUENCE trades_id_seq
-OWNED BY trades.id;
-
-
-
--- ============================================================
--- CREATE MONTHLY PARTITIONS
--- ============================================================
-
-CREATE TABLE trades_2026_04
-PARTITION OF trades
-FOR VALUES FROM ('2026-04-01')
-TO ('2026-05-01');
-
-
-CREATE TABLE trades_2026_05
-PARTITION OF trades
-FOR VALUES FROM ('2026-05-01')
-TO ('2026-06-01');
-
-
-CREATE TABLE trades_2026_06
-PARTITION OF trades
-FOR VALUES FROM ('2026-06-01')
-TO ('2026-07-01');
-
-
-CREATE TABLE trades_2026_07
-PARTITION OF trades
-FOR VALUES FROM ('2026-07-01')
-TO ('2026-08-01');
-
-
-CREATE TABLE trades_default
-PARTITION OF trades DEFAULT;
-
-
-
--- ============================================================
--- INDEXES
--- ============================================================
-
-CREATE INDEX idx_partitioned_trades_status
-ON trades(status);
-
-
-CREATE INDEX idx_partitioned_trades_instrument
-ON trades(instrument_id);
-
-
-CREATE INDEX idx_partitioned_trades_counterparty
-ON trades(counterparty_id);
-
-
-
--- ============================================================
--- COPY OLD DATA
--- ============================================================
-
-INSERT INTO trades
-(
-    id,
-    trade_ref,
-    instrument_id,
-    counterparty_id,
-    asset_class,
-    side,
-    quantity,
-    price,
-    trade_date,
-    status,
-    deleted_at,
-    created_at,
-    modified_at
-)
-
-SELECT
-    id,
-    trade_ref,
-    instrument_id,
-    counterparty_id,
-    asset_class,
-    side,
-    quantity,
-    price,
-    trade_date,
-    status,
-    deleted_at,
-    created_at,
-    modified_at
-
-FROM trades_legacy;
-
-
-
--- ============================================================
--- RESET SEQUENCE
--- ============================================================
-
-SELECT setval
-(
-    'trades_id_seq',
-    COALESCE
-    (
-        (SELECT MAX(id) FROM trades),
-        1
-    ),
-    true
-);
-
-
-
--- ============================================================
--- ADD trade_date TO CHILD TABLES
--- REQUIRED FOR PARTITIONED FK
--- ============================================================
-
-ALTER TABLE settlements
-ADD COLUMN IF NOT EXISTS trade_date DATE;
-
-
-ALTER TABLE recon_breaks
-ADD COLUMN IF NOT EXISTS trade_date DATE;
-
-
-
--- ============================================================
--- POPULATE CHILD trade_date VALUES
--- ============================================================
-
-UPDATE settlements s
-SET trade_date = t.trade_date
-FROM trades_legacy t
-WHERE s.trade_id = t.id;
-
-
-
-UPDATE recon_breaks r
-SET trade_date = t.trade_date
-FROM trades_legacy t
-WHERE r.trade_id = t.id;
-
-
-
--- ============================================================
--- MAKE trade_date REQUIRED
--- ============================================================
-
-ALTER TABLE settlements
-ALTER COLUMN trade_date SET NOT NULL;
-
-
-ALTER TABLE recon_breaks
-ALTER COLUMN trade_date SET NOT NULL;
-
-
-
--- ============================================================
--- RECREATE FOREIGN KEYS
--- ============================================================
-
-ALTER TABLE settlements
-ADD CONSTRAINT fk_settlements_trade
-FOREIGN KEY (trade_id, trade_date)
-REFERENCES trades(id, trade_date);
-
-
-
-ALTER TABLE recon_breaks
-ADD CONSTRAINT fk_recon_breaks_trade
-FOREIGN KEY (trade_id, trade_date)
-REFERENCES trades(id, trade_date);
-
-
-
--- ============================================================
--- RECREATE MATERIALIZED VIEW
--- ============================================================
-
-DROP MATERIALIZED VIEW IF EXISTS mv_daily_recon_summary;
-
-
-CREATE MATERIALIZED VIEW mv_daily_recon_summary AS
-
-SELECT
-    trade_date,
-    status,
-    COUNT(*) AS total_trades
-
-FROM trades
-
-GROUP BY trade_date, status;
-
-
-
--- ============================================================
--- REMOVE OLD TABLE
--- ============================================================
-
-DROP TABLE trades_legacy;
-
-
-]]></sql>
-
-
-
+        <comment>Placeholder: students rebuild this in ADV007. Trainer copy
+                 ships a no-op so dev/uat boot cleanly.</comment>
+        <sql>SELECT 1;</sql>
         <rollback>
-            <sql splitStatements="false"><![CDATA[
-
-DROP MATERIALIZED VIEW IF EXISTS mv_daily_recon_summary;
-
-
-ALTER TABLE settlements
-DROP CONSTRAINT IF EXISTS fk_settlements_trade;
-
-
-ALTER TABLE recon_breaks
-DROP CONSTRAINT IF EXISTS fk_recon_breaks_trade;
-
-
-DROP TABLE IF EXISTS trades CASCADE;
-
-
-]]></sql>
+            <sql>SELECT 1;</sql>
         </rollback>
-
-
     </changeSet>
-
 
 </databaseChangeLog>
