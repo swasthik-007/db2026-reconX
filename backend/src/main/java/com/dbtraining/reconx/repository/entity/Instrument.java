@@ -1,6 +1,13 @@
 package com.dbtraining.reconx.repository.entity;
 
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.Type;
+import org.hibernate.type.SqlTypes;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * TICKET-ADV051 — JPA entity Instrument. JSONB metadata column wired via
@@ -30,31 +37,62 @@ public class Instrument {
     @Column(length = 12)
     private String isin;
 
+    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column
+    private Map<String, Object> metadata = new HashMap<>();
+
     public Instrument() {}
 
-    public Long getId()         { return id; }
-    public String getSymbol()   { return symbol; }
-    public String getName()     { return name; }
-    public String getAssetClass(){ return assetClass; }
-    public String getCurrency() { return currency; }
-    public String getIsin()     { return isin; }
-public void setSymbol(String symbol) {
-    this.symbol = symbol;
-}
+    public Long getId() {
+        return id;
+    }
 
-public void setName(String name) {
-    this.name = name;
-}
+    public String getSymbol() {
+        return symbol;
+    }
 
-public void setAssetClass(String assetClass) {
-    this.assetClass = assetClass;
-}
+    public String getName() {
+        return name;
+    }
 
-public void setCurrency(String currency) {
-    this.currency = currency;
-}
+    public String getAssetClass() {
+        return assetClass;
+    }
 
-public void setIsin(String isin) {
-    this.isin = isin;
-}
+    public String getCurrency() {
+        return currency;
+    }
+
+    public String getIsin() {
+        return isin;
+    }
+
+    public Map<String, Object> getMetadata() {
+        return metadata;
+    }
+
+    public void setSymbol(String symbol) {
+        this.symbol = symbol;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setAssetClass(String assetClass) {
+        this.assetClass = assetClass;
+    }
+
+    public void setCurrency(String currency) {
+        this.currency = currency;
+    }
+
+    public void setIsin(String isin) {
+        this.isin = isin;
+    }
+
+    public void setMetadata(Map<String, Object> metadata) {
+        this.metadata = metadata;
+    }
 }
