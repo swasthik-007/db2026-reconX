@@ -60,22 +60,25 @@ class DtoCoverageTest {
 
 
     @Test
-    void pagedResponse_recordCoverage() {
+void pagedResponse_recordCoverage() {
 
-        PagedResponse<String> response =
-                new PagedResponse<>(
-                        List.of("A", "B"),
-                        0,
-                        20,
-                        2,
-                        1
-                );
+    PagedResponse<String> response =
+            new PagedResponse<>(
+                    List.of("A", "B"),
+                    0,
+                    20,
+                    2,
+                    1,
+                    true
+            );
 
-        assertEquals(2, response.items().size());
-        assertEquals(0, response.page());
-        assertEquals(20, response.size());
-        assertEquals(2, response.totalElements());
-    }
+    assertEquals(2, response.content().size());
+    assertEquals(0, response.page());
+    assertEquals(20, response.size());
+    assertEquals(2, response.totalElements());
+    assertEquals(1, response.totalPages());
+    assertTrue(response.last());
+}
 
 
     @Test
