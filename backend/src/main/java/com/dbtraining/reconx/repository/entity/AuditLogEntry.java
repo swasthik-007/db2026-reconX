@@ -58,7 +58,8 @@ public class AuditLogEntry {
      * Large JSON snapshot before trade change.
      * Matches Liquibase TEXT column.
      */
-   @Column(name = "before_state", columnDefinition = "TEXT")
+     @Lob
+   @Column(name = "before_state")
 private String beforeState;
 
 
@@ -68,7 +69,8 @@ private String beforeState;
      * Large JSON snapshot after trade change.
      * Matches Liquibase TEXT column.
      */
-    @Column(name = "after_state", columnDefinition = "TEXT")
+     @Lob
+    @Column(name = "after_state")
 private String afterState;
 
 
