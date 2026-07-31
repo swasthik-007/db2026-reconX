@@ -1,5 +1,5 @@
 # =============================================================================
-# TICKET-ADV049 — prod profile: PostgreSQL, secrets only from env
+# TICKET-ADV049 — prod profile
 # =============================================================================
 
 spring:
@@ -13,6 +13,25 @@ spring:
       maximum-pool-size: 30
       connection-timeout: 3000
       leak-detection-threshold: 30000
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP}
+
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+
+    consumer:
+      group-id: reconx-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.dbtraining.reconx.dto
+        spring.json.use.type.headers: false
+        spring.json.value.default.type: com.dbtraining.reconx.dto.TradeEvent
 
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
