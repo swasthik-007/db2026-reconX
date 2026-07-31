@@ -1,7 +1,7 @@
 package com.dbtraining.reconx.controller;
 
 import com.dbtraining.reconx.dto.PagedResponse;
-import com.dbtraining.reconx.dto.TradeMapper;
+import com.dbtraining.reconx.mapper.TradeMapper;
 import com.dbtraining.reconx.dto.TradeRequest;
 import com.dbtraining.reconx.dto.TradeResponse;
 import com.dbtraining.reconx.repository.entity.Trade;
