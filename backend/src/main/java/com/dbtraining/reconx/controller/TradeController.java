@@ -16,6 +16,7 @@ import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -24,7 +25,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.format.annotation.DateTimeFormat;
 import java.net.URI;
 import java.time.LocalDate;
 import java.util.Map;
@@ -55,41 +56,21 @@ public class TradeController {
     @GetMapping
     @Operation(summary = "List trades — paginated, filterable, sortable")
     public PagedResponse<TradeResponse> list(
-            @RequestParam(required = false) LocalDate from,
-            @RequestParam(required = false) LocalDate to,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate from,
+
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate to,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) Long counterpartyId,
-
-            @PageableDefault(
-                    size = 20,
-                    sort = "tradeDate",
-                    direction = Sort.Direction.DESC
-            )
-            Pageable pageable) {
-
-
+            @PageableDefault(size = 20, sort = "tradeDate", direction = Sort.Direction.DESC) Pageable pageable) {
         log.info("Listing trades");
+        Page<Trade> page =
+                service.list(from, to, status, counterpartyId, pageable);
 
-
-        /*
-         TODO ADV063:
-         Page<Trade> trades =
-              service.list(from,to,status,counterpartyId,pageable);
-
-         return PagedResponse.from(
-              trades,
-              mapper::toResponse
-         );
-        */
-
-
-        return new PagedResponse<>(
-                java.util.List.of(),
-                0,
-                pageable.getPageSize(),
-                0,
-                0
-        );
+        return PagedResponse.of(page, mapper::toResponse);
     }
 
 

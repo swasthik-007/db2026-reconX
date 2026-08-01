@@ -10,9 +10,10 @@ public final class TradeSpecifications {
     private TradeSpecifications() {}
 
     public static Specification<Trade> hasStatus(String status) {
-        return (root, query, cb) -> status == null
-                ? cb.conjunction()
-                : cb.equal(root.get("status"), status);
+        return (root, query, cb) ->
+                status == null || status.isBlank()
+                        ? cb.conjunction()
+                        : cb.equal(root.get("status"), status);
     }
 
     public static Specification<Trade> tradeDateBetween(LocalDate from, LocalDate to) {
@@ -51,5 +52,12 @@ public final class TradeSpecifications {
                         root.get("counterparty").get("id"),
                         counterpartyId
                 );
+    }
+
+    public static Specification<Trade> refLike(String pattern) {
+        return (root, query, cb) ->
+                pattern == null || pattern.isBlank()
+                        ? cb.conjunction()
+                        : cb.like(root.get("tradeRef"), pattern + "%");
     }
 }
