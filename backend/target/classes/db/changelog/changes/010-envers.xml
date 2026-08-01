@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Envers Revision Table -->
+    <changeSet id="010-create-revinfo" author="reconx-team">
+
+        <createTable tableName="REVINFO">
+            <column name="REV" type="INT">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="REVTSTMP" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+    </changeSet>
+
+    <!-- Envers Audit Table -->
+    <changeSet id="011-create-trade-aud" author="reconx-team">
+
+        <createTable tableName="trades_aud">
+
+            <column name="id" type="BIGINT"/>
+            <column name="REV" type="INT"/>
+            <column name="REVTYPE" type="SMALLINT"/>
+
+            <column name="trade_ref" type="VARCHAR(30)"/>
+            <column name="instrument_id" type="BIGINT"/>
+            <column name="counterparty_id" type="BIGINT"/>
+            <column name="asset_class" type="VARCHAR(20)"/>
+            <column name="side" type="VARCHAR(4)"/>
+            <column name="quantity" type="DECIMAL(18,4)"/>
+            <column name="price" type="DECIMAL(18,4)"/>
+            <column name="trade_date" type="DATE"/>
+            <column name="status" type="VARCHAR(20)"/>
+            <column name="deleted_at" type="TIMESTAMP"/>
+            <column name="created_at" type="TIMESTAMP"/>
+            <column name="modified_at" type="TIMESTAMP"/>
+
+        </createTable>
+
+    </changeSet>
+
+</databaseChangeLog>
