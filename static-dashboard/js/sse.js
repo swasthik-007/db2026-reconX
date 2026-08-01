@@ -25,22 +25,74 @@
     { tradeRef: 'EQU-20260603-0002', symbol: 'AAPL', qty: 500, price: 178.20, status: 'BREAK' },
   ];
 
-  function prepend(trade) {
-    const el = document.createElement('article');
-    const normalizedStatus = String(trade.status || 'PENDING').toLowerCase();
-    el.className = 'trade-card trade-card--' + normalizedStatus;
-    el.innerHTML = `
-      <strong>${trade.tradeRef || 'Trade'}</strong>
-      <span> ${trade.symbol || 'Unknown'} </span>
-      <span> qty=${trade.qty || 0} </span>
-      <span> price=${trade.price || 0} </span>
-      <span> [${trade.status || 'PENDING'}]</span>`;
-    feed.prepend(el);
+  function escapeHtml(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function formatQty(value) {
+    return new Intl.NumberFormat('en-US').format(value ?? 0);
+  }
+
+  function formatPrice(value) {
+    return new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 4,
+    }).format(value ?? 0);
+  }
+
+  function statusModifier(status) {
+    const normalized = String(status || '').toUpperCase();
+    if (normalized === 'MATCHED') {
+      return 'trade-card--matched';
+    }
+    if (normalized === 'UNMATCHED' || normalized === 'BREAK') {
+      return 'trade-card--break';
+    }
+    return '';
+  }
+
+  function prependTradeRow(trade) {
+    const row = document.createElement('article');
+    const statusClass = statusModifier(trade.status);
+    row.className = `trade-card ${statusClass} trade-card--new`;
+
+    const tradeRef = escapeHtml(trade.tradeRef || 'Trade');
+    const symbol = escapeHtml(trade.symbol || 'Unknown');
+    const status = escapeHtml(trade.status || 'PENDING');
+    const qty = formatQty(trade.qty);
+    const price = formatPrice(trade.price);
+    const currency = trade.currency ? escapeHtml(trade.currency) : '';
+
+    row.innerHTML = `
+      <header class="trade-card__header">
+        <strong>${tradeRef}</strong>
+        <span>${status}</span>
+      </header>
+      <div class="trade-card__body">
+        <span>${symbol}</span>
+        <span>qty=${qty}</span>
+        <span>price=${price}${currency ? ' ' + currency : ''}</span>
+      </div>`;
+
+    feed.prepend(row);
+
+    setTimeout(() => {
+      row.classList.remove('trade-card--new');
+    }, 500);
+
+    while (feed.children.length > 50) {
+      feed.lastElementChild.remove();
+    }
   }
 
   function startDemoFeed() {
     demoEvents.forEach((event, index) => {
-      setTimeout(() => prepend(event), 500 * index);
+      setTimeout(() => prependTradeRow(event), 500 * index);
     });
   }
 
@@ -62,7 +114,7 @@
     sse.onmessage = function (event) {
       try {
         const trade = JSON.parse(event.data);
-        prepend(trade);
+        prependTradeRow(trade);
       } catch (error) {
         console.warn('Unable to parse trade event', error);
       }
