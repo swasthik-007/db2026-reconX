@@ -253,11 +253,80 @@ body.app-shell {
   color: var(--color-text-muted);
 }
 
-[data-theme="dark"] {
-  --color-bg: #1a1a1a;
-  --color-bg-alt: #242424;
-  --color-surface: #2a2a2a;
-  --color-border: #3a3a3a;
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+}
+
+.data-table caption {
+  caption-side: top;
+  padding: var(--space-3);
+  font-weight: 700;
+  text-align: left;
+}
+
+.data-table th,
+.data-table td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.data-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--color-bg-alt);
+  color: var(--color-text);
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+}
+
+.data-table th.sort-asc::after,
+.data-table th.sort-desc::after {
+  content: '';
+  display: inline-block;
+  margin-left: 0.5rem;
+  border: 6px solid transparent;
+}
+
+.data-table th.sort-asc::after {
+  border-bottom-color: var(--color-text);
+}
+
+.data-table th.sort-desc::after {
+  border-top-color: var(--color-text);
+}
+
+.data-table tbody tr:hover {
+  background: rgba(46, 95, 163, 0.08);
+}
+
+.resize-handle {
+  display: inline-block;
+  width: 10px;
+  height: 100%;
+  margin-left: 0.5rem;
+  cursor: col-resize;
+  vertical-align: middle;
+  border-left: 1px solid var(--color-border);
+}
+
+body.resizing {
+  cursor: col-resize;
+}
+
   --color-text: #f5f5f5;
   --color-text-muted: #c7c7c7;
   --shadow-sm: 0 1px 0 rgba(255, 255, 255, 0.06);
