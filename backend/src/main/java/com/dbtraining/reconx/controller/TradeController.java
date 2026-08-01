@@ -76,7 +76,13 @@ public class TradeController {
         // TODO(TICKET-ADV064): call service.create(req, actor), build a Location
         //   header at /api/v1/trades/{id}, and return 201 Created with the
         //   mapped TradeResponse body.
-        throw new UnsupportedOperationException("TICKET-ADV064");
+        String actor = String.valueOf(principal);
+
+        Trade saved = service.create(req, actor);
+
+        return ResponseEntity
+                .created(URI.create("/api/v1/trades/" + saved.getId()))
+                .body(mapper.toResponse(saved));
     }
 
     @PutMapping("/{id}")
@@ -85,7 +91,9 @@ public class TradeController {
                                 @AuthenticationPrincipal Object principal) {
         // TODO(TICKET-ADV065): delegate to service.update(id, req, actor) and
         //   map the updated entity through mapper.toResponse.
-        throw new UnsupportedOperationException("TICKET-ADV065");
+        return mapper.toResponse(
+                service.update(id, req, String.valueOf(principal))
+        );
     }
 
     @PatchMapping("/{id}/status")
@@ -95,7 +103,11 @@ public class TradeController {
                                       @AuthenticationPrincipal Object principal) {
         // TODO(TICKET-ADV066): read body.get("status") and call
         //   service.updateStatus(id, status, actor). Return mapper.toResponse(saved).
-        throw new UnsupportedOperationException("TICKET-ADV066");
+        String status = body.get("status");
+
+        return mapper.toResponse(
+                service.updateStatus(id, status, String.valueOf(principal))
+        );
     }
 
     @DeleteMapping("/{id}")
@@ -103,6 +115,7 @@ public class TradeController {
     public ResponseEntity<Void> delete(@PathVariable Long id,
                                        @AuthenticationPrincipal Object principal) {
         // TODO(TICKET-ADV067): service.softDelete(id, actor); return 204 No Content.
-        throw new UnsupportedOperationException("TICKET-ADV067");
+        service.softDelete(id, String.valueOf(principal));
+        return ResponseEntity.noContent().build();
     }
 }

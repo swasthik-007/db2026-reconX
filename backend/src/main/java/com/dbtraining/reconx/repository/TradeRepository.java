@@ -1,13 +1,15 @@
 package com.dbtraining.reconx.repository;
 
 import com.dbtraining.reconx.repository.entity.Trade;
+import com.dbtraining.reconx.repository.entity.TradeStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.repository.query.Param;
-import com.dbtraining.reconx.repository.entity.TradeStatus;
 
 import java.time.LocalDate;
 import java.util.Optional;
@@ -24,12 +26,19 @@ public interface TradeRepository
 
     Optional<Trade> findByTradeRef(String tradeRef);
 
+    @EntityGraph(attributePaths = {"instrument", "counterparty"})
+    Optional<Trade> findWithRelationsById(Long id);
+
+    @EntityGraph(attributePaths = {"instrument", "counterparty"})
+    @Override
+    Page<Trade> findAll(Specification<Trade> spec, Pageable pageable);
+
     @Query("""
-    SELECT t FROM Trade t
-    WHERE t.tradeDate BETWEEN :from AND :to
-      AND (:status IS NULL OR t.status = :status)
-      AND (:counterpartyId IS NULL OR t.counterparty.id = :counterpartyId)
-    """)
+        SELECT t FROM Trade t
+        WHERE t.tradeDate BETWEEN :from AND :to
+          AND (:status IS NULL OR t.status = :status)
+          AND (:counterpartyId IS NULL OR t.counterparty.id = :counterpartyId)
+        """)
     Page<Trade> findByFilters(
             @Param("from") LocalDate from,
             @Param("to") LocalDate to,
