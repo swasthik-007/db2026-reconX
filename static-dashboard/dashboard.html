@@ -4,6 +4,12 @@
   <meta charset="utf-8" />
   <title>ReconX (static) — Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script>
+    (function () {
+      const stored = localStorage.getItem('reconx-theme') || 'light';
+      document.documentElement.setAttribute('data-theme', stored);
+    })();
+  </script>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body class="app-shell">
@@ -51,5 +57,6 @@
   <footer class="app-footer" role="contentinfo">
     <small>ReconX TDI 2026 · static dashboard (Day 7)</small>
   </footer>
+  <script src="js/theme.js"></script>
 </body>
 </html>
