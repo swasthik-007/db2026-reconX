@@ -1,5 +1,7 @@
 package com.dbtraining.reconx.controller;
 
+import org.springframework.http.MediaType;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import com.dbtraining.reconx.dto.PagedResponse;
 import com.dbtraining.reconx.dto.TradeRequest;
 import com.dbtraining.reconx.dto.TradeResponse;
@@ -25,6 +27,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import org.springframework.web.bind.annotation.*;
+
 import org.springframework.format.annotation.DateTimeFormat;
 import java.net.URI;
 import java.time.LocalDate;
@@ -33,6 +36,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/v1/trades")
+@CrossOrigin(origins = "http://localhost:5500")
 @Tag(name = "trades", description = "Trade CRUD and search")
 @SecurityRequirement(name = "bearerAuth")
 public class TradeController {
@@ -73,7 +77,22 @@ public class TradeController {
         return PagedResponse.of(page, mapper::toResponse);
     }
 
+    @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(summary = "Live trade event stream")
+    public SseEmitter streamTrades() {
 
+    SseEmitter emitter = new SseEmitter(0L);
+
+    try {
+        emitter.send(SseEmitter.event()
+                .name("connected")
+                .data("{\"status\":\"connected\"}"));
+    } catch (Exception ex) {
+        emitter.completeWithError(ex);
+    }
+
+    return emitter;
+    }
 
     @PostMapping
     @Operation(summary = "Create a trade")
