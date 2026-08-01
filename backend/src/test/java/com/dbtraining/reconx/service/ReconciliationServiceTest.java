@@ -2,7 +2,9 @@ package com.dbtraining.reconx.service;
 
 import com.dbtraining.reconx.dto.ReconResult;
 import com.dbtraining.reconx.model.*;
+import com.dbtraining.reconx.observability.ReconMetrics;
 import com.dbtraining.reconx.repository.ReconResultRepository;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -14,20 +16,52 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 class ReconciliationServiceTest {
+
     @Test
     void testReconcile_savesResultWithMatchedStatus() {
+
         // given
         ReconResultRepository repo = mock(ReconResultRepository.class);
+
         ReconciliationEngine engine = new ReconciliationEngine();
-        ReconciliationService service = new ReconciliationService(engine, repo);
+
+        ReconMetrics reconMetrics =
+                new ReconMetrics(new SimpleMeterRegistry());
+
+        ReconciliationService service =
+                new ReconciliationService(
+                        engine,
+                        repo,
+                        reconMetrics
+                );
+
 
         List<TradeType> internal =
-                List.of((TradeType) equity("EQU-20260603-0001", "100.00", "10"));
+                List.of(
+                        equity(
+                                "EQU-20260603-0001",
+                                "100.00",
+                                "10"
+                        )
+                );
 
         List<TradeType> external =
-                List.of((TradeType) equity("EQU-20260603-0001", "100.00", "10"));
+                List.of(
+                        equity(
+                                "EQU-20260603-0001",
+                                "100.00",
+                                "10"
+                        )
+                );
+
+
         // when
-        service.runRecon(internal, external, ReconciliationRule.EXACT);
+        service.runRecon(
+                internal,
+                external,
+                ReconciliationRule.EXACT
+        );
+
 
         // then
         ArgumentCaptor<ReconResult> captor =
@@ -37,11 +71,18 @@ class ReconciliationServiceTest {
 
         ReconResult saved = captor.getValue();
 
-        assertThat(saved.tradeRef()).isEqualTo("EQU-20260603-0001");
-        assertThat(saved.status()).isEqualTo(ReconResult.Status.MATCHED);
+        assertThat(saved.tradeRef())
+                .isEqualTo("EQU-20260603-0001");
+
+        assertThat(saved.status())
+                .isEqualTo(ReconResult.Status.MATCHED);
     }
 
-    private EquityTrade equity(String ref, String price, String qty) {
+
+    private EquityTrade equity(String ref,
+                               String price,
+                               String qty) {
+
         return EquityTrade.builder()
                 .tradeRef(TradeRef.of(ref))
                 .instrumentSymbol("SAP.DE")

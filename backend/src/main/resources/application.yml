@@ -1,5 +1,5 @@
 # =============================================================================
-# TICKET-ADV049 — Spring profile configuration (default + profile overrides)
+# TICKET-ADV049 — Spring profile configuration
 # =============================================================================
 
 spring:
@@ -22,8 +22,10 @@ spring:
       hibernate.jdbc.time_zone: UTC
 
   cache:
-    cache-names: instruments,counterparties
-    
+    cache-names:
+      - instruments
+      - counterparties
+
 
 server:
   servlet:
@@ -33,8 +35,17 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus,env,loggers,caches
+        include:
+          - health
+          - info
+          - metrics
+          - prometheus
+          - env
+          - loggers
+          - caches
+
       base-path: /actuator
+
 
   endpoint:
     health:
@@ -42,15 +53,18 @@ management:
       probes:
         enabled: true
 
+
   metrics:
     distribution:
       percentiles-histogram:
         http.server.requests: true
-        reconciliation.duration: true
+
       percentiles:
         http.server.requests: 0.5,0.95,0.99
+
     tags:
       application: ${spring.application.name}
+
 
 reconx:
   security:
@@ -60,13 +74,16 @@ reconx:
       refresh-expiration-days: ${JWT_REFRESH_EXP_DAYS:7}
       issuer: reconx
 
+
 logging:
   level:
     com.dbtraining.reconx: INFO
     org.springframework.web: INFO
     org.hibernate.SQL: WARN
+
   pattern:
     correlation: "[%X{correlationId:-}] [%X{tradeRef:-}]"
+
 
 springdoc:
   swagger-ui:
