@@ -11,6 +11,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import jakarta.servlet.http.HttpServletResponse;
 /**
  * Security configuration.
  *
@@ -92,8 +93,14 @@ public class SecurityConfig {
 
                         .anyRequest().authenticated()
                 )
+                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
 
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                 .exceptionHandling(exception ->
+                         exception.authenticationEntryPoint(
+                                 (request, response, authException) ->
+                                         response.sendError(HttpServletResponse.SC_UNAUTHORIZED)
+                         )
+                 );
 
         return http.build();
     }
