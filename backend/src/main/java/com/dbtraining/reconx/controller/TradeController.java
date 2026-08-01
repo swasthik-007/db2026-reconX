@@ -21,11 +21,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 
+import org.springframework.format.annotation.DateTimeFormat;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import org.springframework.web.bind.annotation.*;
-import org.springframework.format.annotation.DateTimeFormat;
+
 import java.net.URI;
 import java.time.LocalDate;
 import java.util.Map;
@@ -33,7 +35,10 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/v1/trades")
-@Tag(name = "trades", description = "Trade CRUD and search")
+@Tag(
+        name = "trades",
+        description = "Trade CRUD and search"
+)
 @SecurityRequirement(name = "bearerAuth")
 public class TradeController {
 
@@ -42,93 +47,274 @@ public class TradeController {
             LoggerFactory.getLogger(TradeController.class);
 
 
+
     private final TradeService service;
+
     private final TradeMapper mapper;
 
 
-    public TradeController(TradeService service,
-                           TradeMapper mapper) {
+
+    public TradeController(
+            TradeService service,
+            TradeMapper mapper) {
+
         this.service = service;
         this.mapper = mapper;
+
     }
 
 
+
+    /**
+     * TICKET-ADV055
+     * TICKET-ADV056
+     *
+     * GET /api/v1/trades
+     *
+     * Paginated + filterable trade search
+     */
     @GetMapping
-    @Operation(summary = "List trades — paginated, filterable, sortable")
+    @Operation(
+            summary = "List trades — paginated, filterable, sortable"
+    )
     public PagedResponse<TradeResponse> list(
+
             @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @DateTimeFormat(
+                    iso = DateTimeFormat.ISO.DATE
+            )
             LocalDate from,
 
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            LocalDate to,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) Long counterpartyId,
-            @PageableDefault(size = 20, sort = "tradeDate", direction = Sort.Direction.DESC) Pageable pageable) {
-        log.info("Listing trades");
-        Page<Trade> page =
-                service.list(from, to, status, counterpartyId, pageable);
 
-        return PagedResponse.of(page, mapper::toResponse);
+            @RequestParam(required = false)
+            @DateTimeFormat(
+                    iso = DateTimeFormat.ISO.DATE
+            )
+            LocalDate to,
+
+
+            @RequestParam(required = false)
+            String status,
+
+
+            @RequestParam(required = false)
+            Long counterpartyId,
+
+
+            @PageableDefault(
+                    size = 20,
+                    sort = "tradeDate",
+                    direction = Sort.Direction.DESC
+            )
+            Pageable pageable
+    ) {
+
+
+        log.info("Listing trades");
+
+
+        Page<Trade> page =
+                service.list(
+                        from,
+                        to,
+                        status,
+                        counterpartyId,
+                        pageable
+                );
+
+
+        return PagedResponse.of(
+                page,
+                mapper::toResponse
+        );
+
     }
 
 
 
-    @PostMapping
-    @Operation(summary = "Create a trade")
-    public ResponseEntity<TradeResponse> create(@Valid @RequestBody TradeRequest req,
-                                                @AuthenticationPrincipal Object principal) {
-        // TODO(TICKET-ADV064): call service.create(req, actor), build a Location
-        //   header at /api/v1/trades/{id}, and return 201 Created with the
-        //   mapped TradeResponse body.
-        String actor = String.valueOf(principal);
 
-        Trade saved = service.create(req, actor);
+    /**
+     * TICKET-ADV064
+     *
+     * POST /api/v1/trades
+     *
+     * Creates trade.
+     */
+    @PostMapping
+    @Operation(
+            summary = "Create a trade"
+    )
+    public ResponseEntity<TradeResponse> create(
+
+            @Valid
+            @RequestBody
+            TradeRequest request,
+
+
+            @AuthenticationPrincipal
+            Object principal
+
+    ) {
+
+
+        String actor =
+                String.valueOf(principal);
+
+
+
+        Trade saved =
+                service.create(
+                        request,
+                        actor
+                );
+
+
 
         return ResponseEntity
-                .created(URI.create("/api/v1/trades/" + saved.getId()))
-                .body(mapper.toResponse(saved));
+                .created(
+                        URI.create(
+                                "/api/v1/trades/"
+                                        + saved.getId()
+                        )
+                )
+                .body(
+                        mapper.toResponse(saved)
+                );
+
     }
 
 
 
+
+
+    /**
+     * TICKET-ADV065
+     *
+     * PUT /api/v1/trades/{id}
+     *
+     * Full update.
+     */
     @PutMapping("/{id}")
-    @Operation(summary = "Full update of a trade")
-    public TradeResponse update(@PathVariable Long id, @Valid @RequestBody TradeRequest req,
-                                @AuthenticationPrincipal Object principal) {
-        // TODO(TICKET-ADV065): delegate to service.update(id, req, actor) and
-        //   map the updated entity through mapper.toResponse.
-        return mapper.toResponse(
-                service.update(id, req, String.valueOf(principal))
-        );
+    @Operation(
+            summary = "Full update of a trade"
+    )
+    public TradeResponse update(
+
+            @PathVariable
+            Long id,
+
+
+            @Valid
+            @RequestBody
+            TradeRequest request,
+
+
+            @AuthenticationPrincipal
+            Object principal
+
+    ) {
+
+
+        Trade updated =
+                service.update(
+                        id,
+                        request,
+                        String.valueOf(principal)
+                );
+
+
+
+        return mapper.toResponse(updated);
+
     }
 
 
 
+
+
+    /**
+     * TICKET-ADV066
+     *
+     * PATCH /api/v1/trades/{id}/status
+     *
+     * Updates only status.
+     */
     @PatchMapping("/{id}/status")
-    @Operation(summary = "Update only the status field")
-    public TradeResponse updateStatus(@PathVariable Long id,
-                                      @RequestBody Map<String, String> body,
-                                      @AuthenticationPrincipal Object principal) {
-        // TODO(TICKET-ADV066): read body.get("status") and call
-        //   service.updateStatus(id, status, actor). Return mapper.toResponse(saved).
-        String status = body.get("status");
+    @Operation(
+            summary = "Update only trade status"
+    )
+    public TradeResponse updateStatus(
 
-        return mapper.toResponse(
-               service.updateStatus(id, status, String.valueOf(principal))
-        );
+            @PathVariable
+            Long id,
+
+
+            @RequestBody
+            Map<String,String> body,
+
+
+            @AuthenticationPrincipal
+            Object principal
+
+    ) {
+
+
+        String status =
+                body.get("status");
+
+
+
+        Trade updated =
+                service.updateStatus(
+                        id,
+                        status,
+                        String.valueOf(principal)
+                );
+
+
+
+        return mapper.toResponse(updated);
+
     }
 
 
 
+
+
+    /**
+     * TICKET-ADV067
+     *
+     * DELETE /api/v1/trades/{id}
+     *
+     * Soft delete.
+     */
     @DeleteMapping("/{id}")
-    @Operation(summary = "Soft delete (sets deleted_at)")
-    public ResponseEntity<Void> delete(@PathVariable Long id,
-                                       @AuthenticationPrincipal Object principal) {
-        // TODO(TICKET-ADV067): service.softDelete(id, actor); return 204 No Content.
-        service.softDelete(id, String.valueOf(principal));
-        return ResponseEntity.noContent().build();
+    @Operation(
+            summary = "Soft delete trade"
+    )
+    public ResponseEntity<Void> delete(
+
+            @PathVariable
+            Long id,
+
+
+            @AuthenticationPrincipal
+            Object principal
+
+    ) {
+
+
+        service.softDelete(
+                id,
+                String.valueOf(principal)
+        );
+
+
+
+        return ResponseEntity
+                .noContent()
+                .build();
+
     }
 
 }
