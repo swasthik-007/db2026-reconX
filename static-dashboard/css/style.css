@@ -253,6 +253,46 @@ body.app-shell {
   color: var(--color-text-muted);
 }
 
+.feed-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-badge--live {
+  color: var(--color-success);
+  border-color: var(--color-success);
+  background: rgba(40, 167, 69, 0.12);
+}
+
+.status-badge--connecting,
+.status-badge--reconnecting {
+  color: var(--color-warning);
+  border-color: var(--color-warning);
+  background: rgba(255, 193, 7, 0.16);
+}
+
+.status-badge--error {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+  background: rgba(220, 53, 69, 0.12);
+}
+
+[data-theme="dark"] {
+  --color-bg: #1a1a1a;
+  --color-bg-alt: #242424;
+  --color-surface: #2a2a2a;
+  --color-border: #3a3a3a;
 .table-scroll {
   width: 100%;
   overflow-x: auto;

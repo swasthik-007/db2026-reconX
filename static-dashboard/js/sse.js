@@ -1,112 +1,90 @@
-// TICKET-ADV104 / TICKET-ADV105 — EventSource live feed with prepend + slide-in animation.
+// TICKET-ADV107 — EventSource live feed with prepend + slide-in animation.
 (function () {
-  const feed = document.getElementById('trade-feed');
-  const statusBadge = document.getElementById('sse-status');
+  const FEED_EL = document.getElementById('trade-feed');
+  const STATUS_EL = document.getElementById('sse-status');
 
-  if (!feed || !statusBadge) return;
+  if (!FEED_EL || !STATUS_EL) return;
 
-  const STREAM_URL = 'http://localhost:8080/api/v1/trades/stream';
-  let sse = null;
+  const STREAM_URL = '/api/v1/trades/stream';
+  // If frontend runs on a different server, use:
+  // const STREAM_URL = 'http://localhost:8080/api/v1/trades/stream';
 
-  function updateConnectionBadge(text, variant) {
-    statusBadge.textContent = text;
-    statusBadge.className = 'sse-status';
+  const MAX_FEED_ITEMS = 50;
 
-    if (variant === 'live') {
-      statusBadge.classList.add('is-live');
-    } else if (variant === 'reconnecting') {
-      statusBadge.classList.add('is-reconnecting');
-    }
+  if (typeof window.EventSource === 'undefined') {
+    updateConnectionBadge('SSE unsupported', 'error');
+    return;
   }
 
-  const demoEvents = [
-    { tradeRef: 'EQU-20260603-0001', symbol: 'SAP.DE', qty: 1000, price: 125.50, status: 'MATCHED' },
-    { tradeRef: 'FX-20260603-0001', symbol: 'EUR/USD', qty: 1_000_000, price: 1.0852, status: 'PENDING' },
-    { tradeRef: 'EQU-20260603-0002', symbol: 'AAPL', qty: 500, price: 178.20, status: 'BREAK' },
-  ];
+  const qtyFormatter = new Intl.NumberFormat('en-US');
+  const priceFormatter = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 4,
+  });
+
+  let sse = null;
 
   function escapeHtml(value) {
-    return String(value || '')
+    const input = String(value ?? '');
+    return input
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
   }
+function updateConnectionBadge(text, variant) {
+  if (!STATUS_EL) return;
+  STATUS_EL.textContent = text;
+  STATUS_EL.className = 'status-badge status-badge--' + variant;
+}
 
-  function formatQty(value) {
-    return new Intl.NumberFormat('en-US').format(value ?? 0);
+function prependTradeRow(trade) {
+  const status = String(trade?.status ?? 'PENDING').toUpperCase();
+
+  const statusClassMap = {
+    MATCHED: 'trade-card--matched',
+    BREAK: 'trade-card--break',
+    UNMATCHED: 'trade-card--break',
+    PENDING: '',
+  };
+
+  const row = document.createElement('article');
+  row.className = ['trade-card', statusClassMap[status] || '', 'trade-card--new']
+    .filter(Boolean)
+    .join(' ');
+
+  row.innerHTML = `
+    <header class="trade-card__header">
+      <strong>${escapeHtml(trade?.tradeRef ?? 'N/A')}</strong>
+      <span>[${escapeHtml(status)}]</span>
+    </header>
+    <div class="trade-card__body">
+      <span>${escapeHtml(trade?.symbol ?? 'N/A')}</span>
+      <span>qty=${qtyFormatter.format(Number(trade?.qty ?? 0))}</span>
+      <span>price=${priceFormatter.format(Number(trade?.price ?? 0))}</span>
+    </div>
+  `;
+
+  const placeholder = FEED_EL.querySelector('.feed-placeholder');
+  if (placeholder) {
+    placeholder.remove();
   }
 
-  function formatPrice(value) {
-    return new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 4,
-    }).format(value ?? 0);
+  FEED_EL.prepend(row);
+
+  setTimeout(function () {
+    row.classList.remove('trade-card--new');
+  }, 500);
+
+  while (FEED_EL.children.length > MAX_FEED_ITEMS) {
+    FEED_EL.lastElementChild.remove();
   }
+}
 
-  function statusModifier(status) {
-    const normalized = String(status || '').toUpperCase();
-    if (normalized === 'MATCHED') {
-      return 'trade-card--matched';
-    }
-    if (normalized === 'UNMATCHED' || normalized === 'BREAK') {
-      return 'trade-card--break';
-    }
-    return '';
-  }
-
-  function prependTradeRow(trade) {
-    const row = document.createElement('article');
-    const statusClass = statusModifier(trade.status);
-    row.className = `trade-card ${statusClass} trade-card--new`;
-
-    const tradeRef = escapeHtml(trade.tradeRef || 'Trade');
-    const symbol = escapeHtml(trade.symbol || 'Unknown');
-    const status = escapeHtml(trade.status || 'PENDING');
-    const qty = formatQty(trade.qty);
-    const price = formatPrice(trade.price);
-    const currency = trade.currency ? escapeHtml(trade.currency) : '';
-
-    row.innerHTML = `
-      <header class="trade-card__header">
-        <strong>${tradeRef}</strong>
-        <span>${status}</span>
-      </header>
-      <div class="trade-card__body">
-        <span>${symbol}</span>
-        <span>qty=${qty}</span>
-        <span>price=${price}${currency ? ' ' + currency : ''}</span>
-      </div>`;
-
-    feed.prepend(row);
-
-    setTimeout(() => {
-      row.classList.remove('trade-card--new');
-    }, 500);
-
-    while (feed.children.length > 50) {
-      feed.lastElementChild.remove();
-    }
-  }
-
-  function startDemoFeed() {
-    demoEvents.forEach((event, index) => {
-      setTimeout(() => prependTradeRow(event), 500 * index);
-    });
-  }
-
-  function connect() {
-    updateConnectionBadge('Connecting…', '');
-    startDemoFeed();
-
-    if (typeof window.EventSource === 'undefined') {
-      updateConnectionBadge('Live', 'live');
-      return;
-    }
-
-    sse = new EventSource(STREAM_URL);
-
+function connect() {
+  updateConnectionBadge('Connecting…', 'connecting');
+  sse = new window.EventSource(STREAM_URL);
     sse.onopen = function () {
       updateConnectionBadge('Live', 'live');
     };
@@ -116,7 +94,7 @@
         const trade = JSON.parse(event.data);
         prependTradeRow(trade);
       } catch (error) {
-        console.warn('Unable to parse trade event', error);
+        console.error('Unable to parse SSE payload:', error);
       }
     };
 
