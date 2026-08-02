@@ -1,6 +1,7 @@
 /* TICKET-ADV101 / ADV102 — CSS custom properties + data-theme overrides */
 :root {
   --color-primary: #003366;
+  --color-focus:   #ffc107;
   --color-success: #28a745;
   --color-warning: #ffc107;
   --color-danger:  #dc3545;
@@ -21,6 +22,7 @@
   --color-text:    #f5f5f5;
   --color-surface: #2a2a2a;
   --color-border:  #3a3a3a;
+  --color-focus:   #ffd65a;
 }
 
 /* TICKET-ADV104 — respect reduced-motion preference */
@@ -77,4 +79,17 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 .error-fallback { padding: var(--space-4); border: 1px solid var(--color-danger); border-radius: var(--radius); background: var(--color-surface); }
 
 /* TICKET-ADV109 — keyboard focus visibility */
-:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--color-bg);
+}
+
+.layout__nav a:focus-visible {
+  text-decoration: underline;
+  border-radius: var(--radius);
+}
