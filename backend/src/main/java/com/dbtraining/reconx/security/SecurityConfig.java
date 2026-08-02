@@ -7,7 +7,10 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 /**
  * Security configuration.
  *
@@ -39,21 +42,24 @@ public class SecurityConfig {
      * - JWT rules can be enabled later
      */
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http,
+                                           JwtAuthenticationFilter jwtFilter) throws Exception {
 
-        return http
-                .csrf(csrf -> csrf.disable())
+         http
+                .csrf(AbstractHttpConfigurer::disable)
 
-                // Needed for H2 console in dev profile
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+
                 .headers(headers ->
-                        headers.frameOptions(frame ->
-                                frame.disable()
-                        )
+                        headers.frameOptions(frame -> frame.disable())
                 )
 
                 .authorizeHttpRequests(auth -> auth
+
                         .requestMatchers(
-                                "/auth/**",
+                                "/auth/login",
                                 "/actuator/health/**",
                                 "/actuator/info",
                                 "/actuator/prometheus",
@@ -63,10 +69,32 @@ public class SecurityConfig {
                                 "/h2/**"
                         ).permitAll()
 
-                        // Temporary Day-1 mode
-                        .anyRequest().permitAll()
+                        .requestMatchers(HttpMethod.GET, "/v1/trades/**")
+                        .hasAnyRole("VIEWER", "TRADER", "RECON_ANALYST", "ADMIN")
+
+                        .requestMatchers(HttpMethod.POST, "/v1/trades")
+                        .hasAnyRole("TRADER", "ADMIN")
+
+                        .requestMatchers(HttpMethod.PUT, "/v1/trades/**")
+                        .hasAnyRole("TRADER", "ADMIN")
+
+                        .requestMatchers(HttpMethod.PATCH, "/v1/trades/**")
+                        .hasAnyRole("TRADER", "ADMIN")
+
+                        .requestMatchers(HttpMethod.DELETE, "/v1/trades/**")
+                        .hasRole("ADMIN")
+
+                        .requestMatchers("/v1/recon/**")
+                        .hasAnyRole("RECON_ANALYST", "ADMIN")
+
+                        .requestMatchers("/v1/audit/**")
+                        .hasAnyRole("RECON_ANALYST", "ADMIN")
+
+                        .anyRequest().authenticated()
                 )
 
-                .build();
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
     }
 }
