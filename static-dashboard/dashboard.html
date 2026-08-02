@@ -48,6 +48,9 @@
       <section aria-labelledby="feed">
         <h2 id="feed">Live trade feed</h2>
         <div class="alert--danger" role="alert">Unmatched trades &gt; 0</div>
+        <div class="feed-toolbar">
+          <span id="sse-status" class="sse-status">Connecting…</span>
+        </div>
         <section id="trade-feed" class="trade-feed" role="status" aria-live="polite" aria-atomic="false">
           <article class="trade-card trade-card--new trade-card--break">
             <strong>BTC/USD</strong>
@@ -66,5 +69,6 @@
     <small>ReconX TDI 2026 · static dashboard (Day 7)</small>
   </footer>
   <script src="js/theme.js"></script>
+  <script src="js/sse.js"></script>
 </body>
 </html>
