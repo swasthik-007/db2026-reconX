@@ -46,12 +46,25 @@
       </section>
 
       <section aria-labelledby="feed">
-        <h2 id="feed" class="feed-heading">
-          Live trade feed
-          <span id="sse-status" class="status-badge status-badge--connecting">Connecting…</span>
-        </h2>
+          <h2 id="feed" class="feed-heading">
+            Live trade feed
+            <span id="sse-status" class="status-badge status-badge--connecting">
+              Connecting…
+            </span>
+          </h2>
+
+          <div class="alert--danger" role="alert">
+            Unmatched trades &gt; 0
+          </div>
         <section id="trade-feed" class="trade-feed" role="status" aria-live="polite" aria-atomic="false">
-          <p class="feed-placeholder">Awaiting live trade updates.</p>
+          <article class="trade-card trade-card--new trade-card--break">
+            <strong>BTC/USD</strong>
+            <div>Break detected · 2 min ago</div>
+          </article>
+          <article class="trade-card trade-card--new trade-card--matched">
+            <strong>EUR/GBP</strong>
+            <div>Matched successfully · 1 min ago</div>
+          </article>
         </section>
       </section>
     </main>
