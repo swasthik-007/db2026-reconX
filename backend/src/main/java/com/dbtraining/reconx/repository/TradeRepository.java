@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.repository.query.Param;
+import java.util.List;
 
 import java.time.LocalDate;
 import java.util.Optional;
@@ -48,4 +49,12 @@ public interface TradeRepository
     );
 
     long countByStatus(String status);
+
+    List<Trade> findByTradeDateBetween(LocalDate from, LocalDate to);
+
+    List<Trade> findByTradeDateBetweenAndCounterpartyId(
+            LocalDate from,
+            LocalDate to,
+            Long counterpartyId
+    );
 }
