@@ -17,22 +17,46 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                             http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
 
-    <changeSet id="008-seed-counterparties" author="trainer">
-        <loadData file="data/counterparties.csv" tableName="counterparties"
-                  separator="," relativeToChangelogFile="true">
+    <changeSet id="008-seed-counterparties"
+               author="trainer"
+               context="dev,test">
+
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM counterparties
+            </sqlCheck>
+        </preConditions>
+
+        <loadData file="data/counterparties.csv"
+                  tableName="counterparties"
+                  separator=","
+                  relativeToChangelogFile="true">
             <column name="id" type="NUMERIC"/>
             <column name="name" type="STRING"/>
             <column name="lei_code" type="STRING"/>
             <column name="region" type="STRING"/>
         </loadData>
+
         <rollback>
             <sql>DELETE FROM counterparties;</sql>
         </rollback>
+
     </changeSet>
 
-    <changeSet id="008-seed-instruments" author="trainer">
-        <loadData file="data/instruments.csv" tableName="instruments"
-                  separator="," relativeToChangelogFile="true">
+    <changeSet id="008-seed-instruments"
+               author="trainer"
+               context="dev,test">
+
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM instruments
+            </sqlCheck>
+        </preConditions>
+
+        <loadData file="data/instruments.csv"
+                  tableName="instruments"
+                  separator=","
+                  relativeToChangelogFile="true">
             <column name="id" type="NUMERIC"/>
             <column name="symbol" type="STRING"/>
             <column name="name" type="STRING"/>
@@ -40,37 +64,136 @@
             <column name="currency" type="STRING"/>
             <column name="isin" type="STRING"/>
         </loadData>
+
         <rollback>
             <sql>DELETE FROM instruments;</sql>
         </rollback>
+
     </changeSet>
 
-    <changeSet id="008-seed-users" author="trainer">
+    <changeSet id="008-seed-users"
+               author="trainer"
+               context="dev,test">
+
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM users
+            </sqlCheck>
+        </preConditions>
+
         <!-- Real BCrypt hashes (cost=10) for admin123 / trader123 / viewer123 / recon123.
              Generated via: htpasswd -bnBC 10 "" <pw> | tr -d ':\n'
              Spring Security's BCryptPasswordEncoder accepts both $2a$ and $2y$ prefixes. -->
+
         <insert tableName="users">
             <column name="email" value="admin@db.com"/>
             <column name="password_hash" value="$2y$10$L9iP3BfsBS2LbVJRfc86TuWnJvP.AohjX3PNLwdtjlZfyB7YSp87C"/>
             <column name="role" value="ADMIN"/>
         </insert>
+
         <insert tableName="users">
             <column name="email" value="trader@db.com"/>
             <column name="password_hash" value="$2y$10$LIpkayi0QDWyVguPtEQbkOATM7PTnMKFDNq47K92TUx2LHTBFQf1i"/>
             <column name="role" value="TRADER"/>
         </insert>
+
         <insert tableName="users">
             <column name="email" value="viewer@db.com"/>
             <column name="password_hash" value="$2y$10$gC8J5Tzr15p4V6BgbbEFGOEb4VWM4YUOAdKEeyFlXtEvYolYblCVC"/>
             <column name="role" value="VIEWER"/>
         </insert>
+
         <insert tableName="users">
             <column name="email" value="recon@db.com"/>
             <column name="password_hash" value="$2y$10$UVYhlvPX38zSdPhY6bz4ee453bh6gXp9guhAfV5IU2SjcWPm0eWKq"/>
             <column name="role" value="RECON_ANALYST"/>
         </insert>
+
         <rollback>
             <sql>DELETE FROM users;</sql>
+        </rollback>
+
+    </changeSet>
+
+    <!-- PostgreSQL-only data generation keeps the checked-in CSV readable
+         while providing the full 50-instrument / 500-trade development set. -->
+    <changeSet id="008-seed-generated-instruments" author="reconx-team" context="dev,test">
+        <preConditions onFail="MARK_RAN">
+            <dbms type="postgresql"/>
+            <sqlCheck expectedResult="15">SELECT COUNT(*) FROM instruments</sqlCheck>
+        </preConditions>
+        <sql splitStatements="false"><![CDATA[
+            INSERT INTO instruments (id, symbol, name, asset_class, currency, isin)
+            SELECT
+                n,
+                'GEN' || LPAD(n::text, 4, '0'),
+                'Generated Instrument ' || n,
+                (ARRAY['EQUITY','FIXED_INCOME','FX','COMMODITY','DERIVATIVE'])[1 + ((n - 16) % 5)],
+                (ARRAY['USD','EUR','GBP','JPY','CHF'])[1 + ((n - 16) % 5)],
+                'XS' || LPAD(n::text, 10, '0')
+            FROM generate_series(16, 50) AS n;
+
+            SELECT setval(pg_get_serial_sequence('instruments', 'id'),
+                          (SELECT MAX(id) FROM instruments));
+            SELECT setval(pg_get_serial_sequence('counterparties', 'id'),
+                          (SELECT MAX(id) FROM counterparties));
+        ]]></sql>
+        <rollback>
+            <sql>DELETE FROM instruments WHERE id BETWEEN 16 AND 50;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="008-seed-trades" author="reconx-team" context="dev,test">
+        <preConditions onFail="MARK_RAN">
+            <dbms type="postgresql"/>
+            <sqlCheck expectedResult="0">SELECT COUNT(*) FROM trades</sqlCheck>
+        </preConditions>
+        <sql splitStatements="false"><![CDATA[
+            INSERT INTO trades (
+                trade_ref, instrument_id, counterparty_id, asset_class, side,
+                quantity, price, trade_date, status
+            )
+            SELECT
+                'TRD-2026-' || LPAD(n::text, 6, '0'),
+                i.id,
+                1 + ((n - 1) % 10),
+                i.asset_class,
+                CASE WHEN n % 2 = 0 THEN 'BUY' ELSE 'SELL' END,
+                ((n % 1000) + 1)::numeric(18,4),
+                ((n % 500) + 25)::numeric(18,4),
+                DATE '2026-04-01' + ((n - 1) % 120),
+                CASE
+                    WHEN n % 10 IN (0, 1) THEN 'UNMATCHED'
+                    WHEN n % 10 = 2 THEN 'DISPUTED'
+                    ELSE 'MATCHED'
+                END
+            FROM generate_series(1, 500) AS n
+            JOIN instruments AS i ON i.id = 1 + ((n - 1) % 50);
+        ]]></sql>
+        <rollback>
+            <sql>DELETE FROM trades WHERE trade_ref LIKE 'TRD-2026-%';</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="008-seed-recon-breaks" author="reconx-team" context="dev,test">
+        <preConditions onFail="MARK_RAN">
+            <dbms type="postgresql"/>
+            <sqlCheck expectedResult="0">SELECT COUNT(*) FROM recon_breaks</sqlCheck>
+        </preConditions>
+        <sql splitStatements="false"><![CDATA[
+            INSERT INTO recon_breaks (trade_id, discrepancy_type, status, resolution_note)
+            SELECT
+                id,
+                (ARRAY['PRICE_MISMATCH','QUANTITY_MISMATCH','DATE_MISMATCH'])[1 + (id % 3)],
+                'OPEN',
+                'Deterministic development seed break'
+            FROM trades
+            WHERE status IN ('UNMATCHED', 'DISPUTED')
+            ORDER BY id
+            LIMIT 30;
+        ]]></sql>
+        <rollback>
+            <sql>DELETE FROM recon_breaks WHERE resolution_note = 'Deterministic development seed break';</sql>
         </rollback>
     </changeSet>
 

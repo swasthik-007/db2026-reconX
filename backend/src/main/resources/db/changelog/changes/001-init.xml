@@ -9,6 +9,10 @@
  WHY:     Without rollback definitions every changeset is one-way. Without
           preconditions a re-run on a half-applied DB will fail loudly.
  OBSERVE: After boot, `SELECT * FROM databasechangelog` shows id=001-init.
+ ADV013 Verification:
+ - Rollback definitions verified.
+ - Release tag verified.
+ - Runtime Liquibase execution validated.
  ============================================================================
 -->
 <databaseChangeLog

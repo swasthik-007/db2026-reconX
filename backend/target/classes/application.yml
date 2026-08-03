@@ -1,0 +1,79 @@
+# =============================================================================
+# TICKET-ADV049 — Spring profile configuration (default + profile overrides)
+# =============================================================================
+
+spring:
+  application:
+    name: reconx
+
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  liquibase:
+    change-log: classpath:/db/changelog/db.changelog-master.xml
+    enabled: true
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate.format_sql: true
+      hibernate.jdbc.time_zone: UTC
+
+  cache:
+    cache-names: instruments,counterparties
+    caffeine:
+      spec: maximumSize=500,expireAfterWrite=5m
+
+server:
+  servlet:
+    context-path: /api
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,env,loggers
+      base-path: /actuator
+
+  endpoint:
+    health:
+      show-details: when_authorized
+      probes:
+        enabled: true
+
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        reconciliation.duration: true
+      percentiles:
+        http.server.requests: 0.5,0.95,0.99
+    tags:
+      application: ${spring.application.name}
+
+reconx:
+  security:
+    jwt:
+      secret: ${JWT_SECRET:dev-secret-change-me-32-bytes-min!!}
+      expiration-minutes: ${JWT_EXP_MIN:60}
+      refresh-expiration-days: ${JWT_REFRESH_EXP_DAYS:7}
+      issuer: reconx
+
+logging:
+  level:
+    com.dbtraining.reconx: INFO
+    org.springframework.web: INFO
+    org.hibernate.SQL: WARN
+  pattern:
+    correlation: "[%X{correlationId:-}] [%X{tradeRef:-}]"
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tagsSorter: alpha
+    operationsSorter: alpha
+
+  api-docs:
+    path: /v3/api-docs

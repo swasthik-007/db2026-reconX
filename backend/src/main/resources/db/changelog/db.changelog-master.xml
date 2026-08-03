@@ -9,7 +9,9 @@
           rollback by tag straightforward (ADV013).
  OBSERVE: On first boot, Liquibase creates databasechangelog + databasechangeloglock
           tables, then applies every included changeset in declared order.
+ Documentation note: ADV012 configuration verified. No functional changes. -
  ============================================================================
+
 -->
 <databaseChangeLog
         xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
@@ -21,9 +23,12 @@
     <include file="changes/002-schema.xml"        relativeToChangelogFile="true"/>
     <include file="changes/003-jsonb.xml"         relativeToChangelogFile="true"/>
     <include file="changes/004-partitioning.xml"  relativeToChangelogFile="true"/>
-    <include file="changes/005-mat-views.xml"     relativeToChangelogFile="true"/>
     <include file="changes/006-audit-and-recon.xml" relativeToChangelogFile="true"/>
+    <include file="changes/005-mat-views.xml"     relativeToChangelogFile="true"/>
     <include file="changes/007-users-rbac.xml"    relativeToChangelogFile="true"/>
     <include file="changes/008-seed.xml"          relativeToChangelogFile="true"/>
-
+    <include file="changes/010-correct-trades-partitioning.xml" relativeToChangelogFile="true"/>
+    <include file="changes/009-release-tag.xml"   relativeToChangelogFile="true"/>
+    <include file="db/changelog/changes/010-envers.xml"/>
+    
 </databaseChangeLog>

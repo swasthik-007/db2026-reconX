@@ -1,59 +1,87 @@
 -- ============================================================================
 -- TICKET-ADV010 — VWAP per instrument per day (window function)
 -- ============================================================================
-SELECT DISTINCT
+SELECT
+    t.trade_ref,
     t.instrument_id,
+    i.symbol,
     t.trade_date,
+    t.quantity,
+    t.price,
+    t.quantity * t.price AS notional,
     SUM(t.price * t.quantity) OVER (PARTITION BY t.instrument_id, t.trade_date)
         / NULLIF(SUM(t.quantity) OVER (PARTITION BY t.instrument_id, t.trade_date), 0)
-            AS vwap
-FROM trades t
+        AS vwap,
+    ROW_NUMBER() OVER (
+        PARTITION BY t.instrument_id, t.trade_date
+        ORDER BY t.created_at, t.id
+    ) AS trade_sequence
+FROM trades AS t
+JOIN instruments AS i ON i.id = t.instrument_id
 WHERE t.deleted_at IS NULL
-  AND t.asset_class = 'EQUITY'
-ORDER BY t.trade_date DESC, t.instrument_id;
+ORDER BY t.trade_date DESC, t.instrument_id, t.created_at, t.id;
 
 
 -- ============================================================================
--- TICKET-ADV011 — Recursive CTE: trade lifecycle (execution -> settlement
---                -> recon_break -> resolution)
+-- TICKET-ADV011 — Recursive CTE: trade lifecycle
+-- execution -> confirmation -> settlement -> recon break -> resolution
 -- ============================================================================
 WITH RECURSIVE trade_lifecycle AS (
-    -- anchor: every trade in its execution state
     SELECT
-        t.id           AS trade_id,
+        t.id AS trade_id,
         t.trade_ref,
-        1              AS step,
-        'EXECUTED'     AS state,
-        t.created_at   AS at_ts,
-        NULL::text     AS detail
-    FROM trades t
+        1 AS stage,
+        'EXECUTION'::text AS stage_name,
+        t.created_at AS event_at,
+        t.status::text AS event_status
+    FROM trades AS t
     WHERE t.deleted_at IS NULL
 
     UNION ALL
 
-    -- recursive: each subsequent state derived from the previous step
     SELECT
         tl.trade_id,
         tl.trade_ref,
-        tl.step + 1,
-        CASE tl.step
-            WHEN 1 THEN 'CONFIRMED'
-            WHEN 2 THEN 'SETTLED'
-            WHEN 3 THEN 'RECONCILED'
-        END                                          AS state,
-        s.settlement_date::timestamp                  AS at_ts,
-        s.status                                      AS detail
-    FROM trade_lifecycle tl
-    JOIN settlements s ON s.trade_id = tl.trade_id
-    WHERE tl.step < 4
+        tl.stage + 1,
+        next_event.stage_name,
+        next_event.event_at,
+        next_event.event_status
+    FROM trade_lifecycle AS tl
+    JOIN LATERAL (
+        SELECT 'CONFIRMATION'::text AS stage_name, tl.event_at AS event_at,
+               'CONFIRMED'::text AS event_status
+        WHERE tl.stage = 1
+
+        UNION ALL
+
+        SELECT 'SETTLEMENT'::text, s.settlement_date::timestamp, s.status::text
+        FROM settlements AS s
+        WHERE tl.stage = 2 AND s.trade_id = tl.trade_id
+
+        UNION ALL
+
+        SELECT 'RECON_BREAK'::text, rb.detected_at, rb.status::text
+        FROM recon_breaks AS rb
+        WHERE tl.stage = 3 AND rb.trade_id = tl.trade_id
+
+        UNION ALL
+
+        SELECT 'RESOLUTION'::text, rb.resolved_at, 'RESOLVED'::text
+        FROM recon_breaks AS rb
+        WHERE tl.stage = 4
+          AND rb.trade_id = tl.trade_id
+          AND rb.resolved_at IS NOT NULL
+    ) AS next_event ON TRUE
+    WHERE tl.stage < 5
 )
-SELECT * FROM trade_lifecycle
-ORDER BY trade_id, step;
+SELECT trade_id, trade_ref, stage, stage_name, event_at, event_status
+FROM trade_lifecycle
+ORDER BY trade_id, stage;
 
 
 -- ============================================================================
--- ADV008 — REFRESH the daily-summary materialised view (concurrent so it can
---         run while the dashboard is reading it)
+-- TICKET-ADV008 — Refresh the daily-summary materialised view without
+-- blocking dashboard readers. The unique view index makes this possible.
 -- ============================================================================
 REFRESH MATERIALIZED VIEW CONCURRENTLY mv_daily_recon_summary;
 
