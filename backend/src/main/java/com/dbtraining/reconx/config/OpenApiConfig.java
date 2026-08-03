@@ -80,6 +80,7 @@ public class OpenApiConfig {
         return GroupedOpenApi.builder()
                 .group("public")
                 .pathsToMatch(
+                        "/auth/**",
                         "/v1/trades/**",
                         "/v1/recon/**"
                 )

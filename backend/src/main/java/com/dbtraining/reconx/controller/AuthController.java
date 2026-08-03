@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/auth")
 @Tag(name = "auth")
+@org.springframework.stereotype.Component
 public class AuthController {
 
     private final AppUserRepository users;
