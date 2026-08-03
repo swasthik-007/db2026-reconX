@@ -77,9 +77,6 @@ public class TradeMetrics {
      * TICKET-ADV086
      */
     public void recordTradeValue(double value) {
-
         tradeValue.record(value);
-
     }
-
 }
