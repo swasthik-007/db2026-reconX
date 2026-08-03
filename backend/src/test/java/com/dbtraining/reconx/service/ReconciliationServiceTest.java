@@ -1,5 +1,5 @@
 package com.dbtraining.reconx.service;
-
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import com.dbtraining.reconx.dto.ReconResult;
 import com.dbtraining.reconx.model.*;
 import com.dbtraining.reconx.repository.ReconResultRepository;
@@ -19,7 +19,11 @@ class ReconciliationServiceTest {
         // given
         ReconResultRepository repo = mock(ReconResultRepository.class);
         ReconciliationEngine engine = new ReconciliationEngine();
-        ReconciliationService service = new ReconciliationService(engine, repo);
+        ReconciliationService service = new ReconciliationService(
+        engine,
+        repo,
+        new SimpleMeterRegistry()
+);
 
         List<TradeType> internal =
                 List.of((TradeType) equity("EQU-20260603-0001", "100.00", "10"));
