@@ -31,3 +31,12 @@ groups:
           severity: critical
         annotations:
           summary: "Messages landing in trade-events-dlq"
+
+      - alert: KafkaDlqMessages
+        expr: sum(kafka_consumer_records_consumed_total{topic="trade-events-dlq"}) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Messages in trade-events DLQ"
+          description: "Inspect /api/v1/admin/dlq and replay one corrected event at a time."
