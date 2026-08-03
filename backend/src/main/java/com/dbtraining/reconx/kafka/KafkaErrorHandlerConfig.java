@@ -1,6 +1,12 @@
 package com.dbtraining.reconx.kafka;
 
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.kafka.listener.DefaultErrorHandler;
+import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.apache.kafka.common.TopicPartition;
+import org.springframework.util.backoff.ExponentialBackOff;
 
 /**
  * ============================================================================
@@ -40,6 +46,11 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class KafkaErrorHandlerConfig {
-
-    // TODO(TICKET-ADV134 + ADV135): define the errorHandler @Bean — see comments above.
+    @Bean
+    DefaultErrorHandler errorHandler(KafkaTemplate<Object, Object> template) {
+        var recoverer = new DeadLetterPublishingRecoverer(template, (record, exception) -> new TopicPartition(record.topic() + "-dlq", record.partition()));
+        var backOff = new ExponentialBackOff(1_000L, 2.0);
+        backOff.setMaxElapsedTime(8_000L);
+        return new DefaultErrorHandler(recoverer, backOff);
+    }
 }

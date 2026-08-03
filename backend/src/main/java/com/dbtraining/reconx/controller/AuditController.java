@@ -7,6 +7,10 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import org.springframework.security.access.prepost.PreAuthorize;
+import com.dbtraining.reconx.service.TradeAggregator;
+import com.fasterxml.jackson.databind.JsonNode;
+import java.util.Optional;
 
 /**
  * TICKET-ADV071 — GET /api/v1/audit/trades/{tradeRef}
@@ -32,10 +36,17 @@ public class AuditController {
     }
 
     @GetMapping("/trades/{tradeRef}/events")
+    @PreAuthorize("hasAnyRole('ADMIN','RECON_ANALYST')")
     @Operation(summary = "Stream of all Kafka-sourced events for a trade")
     public List<AuditLogEntry> events(@PathVariable String tradeRef) {
         // TODO(TICKET-ADV138): once the audit-log Kafka consumer is in place,
         //   return auditRepo.findByTradeRefOrderByEventTimestampAsc(tradeRef).
         return auditRepo.findByTradeRefOrderByEventTimestampAsc(tradeRef);
+    }
+
+    @GetMapping("/trades/{tradeRef}/rebuild")
+    @PreAuthorize("hasAnyRole('ADMIN','RECON_ANALYST')")
+    public Optional<JsonNode> rebuild(@PathVariable String tradeRef, TradeAggregator aggregator) {
+        return aggregator.rebuild(tradeRef);
     }
 }
