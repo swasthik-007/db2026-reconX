@@ -6,8 +6,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -30,7 +28,7 @@ public class AuditController {
         // TODO(TICKET-ADV071): return auditRepo.findByTradeRefOrderByEventTimestampAsc(tradeRef).
         //   Day-0 returns an empty list so the React audit-trail panel renders
         //   "no history yet" instead of erroring.
-        return Collections.emptyList();
+        return auditRepo.findByTradeRefOrderByEventTimestampAsc(tradeRef);
     }
 
     @GetMapping("/trades/{tradeRef}/events")
@@ -38,6 +36,6 @@ public class AuditController {
     public List<AuditLogEntry> events(@PathVariable String tradeRef) {
         // TODO(TICKET-ADV138): once the audit-log Kafka consumer is in place,
         //   return auditRepo.findByTradeRefOrderByEventTimestampAsc(tradeRef).
-        return Collections.emptyList();
+        return auditRepo.findByTradeRefOrderByEventTimestampAsc(tradeRef);
     }
 }

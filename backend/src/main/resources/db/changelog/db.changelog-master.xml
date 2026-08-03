@@ -29,5 +29,6 @@
     <include file="changes/008-seed.xml"          relativeToChangelogFile="true"/>
     <include file="changes/010-correct-trades-partitioning.xml" relativeToChangelogFile="true"/>
     <include file="changes/009-release-tag.xml"   relativeToChangelogFile="true"/>
-
+    <include file="db/changelog/changes/010-envers.xml"/>
+    
 </databaseChangeLog>

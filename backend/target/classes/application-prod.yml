@@ -1,22 +1,46 @@
 # =============================================================================
-# TICKET-ADV049 — prod profile: PostgreSQL, secrets only from env
-#
-# Nothing here may be a literal credential. Every secret comes from env vars
-# resolved at container start (see docker-compose.yml + GitHub Actions secrets).
+# TICKET-ADV049 — prod profile
 # =============================================================================
+
 spring:
   datasource:
     url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
     hikari:
       maximum-pool-size: 30
       connection-timeout: 3000
       leak-detection-threshold: 30000
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP}
+
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+
+    consumer:
+      group-id: reconx-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.dbtraining.reconx.dto
+        spring.json.use.type.headers: false
+        spring.json.value.default.type: com.dbtraining.reconx.dto.TradeEvent
+
   jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
     properties:
-      hibernate.dialect: org.hibernate.dialect.PostgreSQLDialect
-      hibernate.jdbc.batch_size: 100
+      hibernate:
+        jdbc:
+          batch_size: 100
 
 reconx:
   security:
@@ -32,5 +56,5 @@ management:
 
 logging:
   level:
-    com.dbtraining.reconx: INFO
     root: WARN
+    com.dbtraining.reconx: INFO

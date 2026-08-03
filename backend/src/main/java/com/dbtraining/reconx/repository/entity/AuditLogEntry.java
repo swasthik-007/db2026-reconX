@@ -53,7 +53,6 @@ public class AuditLogEntry {
     private String actor;
 
 
-
     /*
      * Large JSON snapshot before trade change.
      * Matches Liquibase TEXT column.
